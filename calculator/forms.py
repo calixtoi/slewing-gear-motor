@@ -104,7 +104,7 @@ class MotorSpecsForm(forms.Form):
     )
     spec_shaft = forms.CharField(
         label='Shaft', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. Ø32k6 × 50'}),
+        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. 32 × 50'}),
     )
     spec_cooling_method = forms.CharField(
         label='Cooling Method', required=False,
@@ -150,6 +150,14 @@ class MotorSpecsForm(forms.Form):
         label='Weight (kg)', required=False, min_value=0,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 45'}),
     )
+    spec_efficiency_class = forms.CharField(
+        label='Efficiency Class', required=False,
+        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IE2, IE3, IE4'}),
+    )
+    spec_voltage = forms.CharField(
+        label='Voltage / Frequency', required=False,
+        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. 400/690V 50Hz · 400/480/690V 60Hz'}),
+    )
 
 
 class SaveCalculationForm(forms.Form):
@@ -165,6 +173,72 @@ class SaveCalculationForm(forms.Form):
         choices=MotorCalculation.CRANE_CHOICES,
         label='Crane type',
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
+    price_prototype = forms.DecimalField(
+        max_digits=10, decimal_places=2, required=False,
+        label='Prototype Price (€)',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control form-control-sm',
+            'step': '0.01', 'placeholder': 'e.g. 1250.00',
+        }),
+    )
+    price_series = forms.DecimalField(
+        max_digits=10, decimal_places=2, required=False,
+        label='Series Price — 100 units (€)',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control form-control-sm',
+            'step': '0.01', 'placeholder': 'e.g. 980.00',
+        }),
+    )
+
+
+class TextDatasheetForm(forms.Form):
+    supplier_name = forms.CharField(
+        max_length=200, label='Supplier Name',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'e.g. Bonfiglioli, ABB, Siemens',
+        }),
+    )
+    crane_type = forms.ChoiceField(
+        choices=MotorCalculation.CRANE_CHOICES,
+        label='Crane Type',
+        initial=MotorCalculation.STANDARD_PF,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+    )
+    price_prototype = forms.DecimalField(
+        max_digits=10, decimal_places=2, required=False,
+        label='Prototype Price (€)',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control form-control-sm',
+            'step': '0.01', 'placeholder': 'e.g. 1250.00',
+        }),
+    )
+    price_series = forms.DecimalField(
+        max_digits=10, decimal_places=2, required=False,
+        label='Series Price — 100 units (€)',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control form-control-sm',
+            'step': '0.01', 'placeholder': 'e.g. 980.00',
+        }),
+    )
+    text_content = forms.CharField(
+        label='Datasheet Text',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 10,
+            'placeholder': (
+                'Paste the full datasheet text from the supplier email or PDF.\n\n'
+                'Lines the parser looks for (examples):\n'
+                '  Rated power: 0.75 kW\n'
+                '  Rated speed: 1454 rpm\n'
+                '  Rated torque (Mn): 4.9 Nm\n'
+                '  Ma/Mn: 3.4\n'
+                '  Starting torque: 16.7 Nm\n'
+                '  Output torque: 405 Nm\n'
+                '  Reduction ratio: 33.4:1'
+            ),
+        }),
     )
 
 

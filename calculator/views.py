@@ -4,10 +4,13 @@ import tempfile
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import DrivetrainForm, SaveCalculationForm, DatasheetUploadForm, MotorSpecsForm
+from .forms import DrivetrainForm, SaveCalculationForm, DatasheetUploadForm, MotorSpecsForm, TextDatasheetForm
 from .engine import drivetrain_sizing
 from .models import MotorCalculation
-from .pdf_parser import parse_datasheet, check_compliance, specs_to_form_initial
+from .pdf_parser import (
+    parse_datasheet, parse_text, check_compliance, specs_to_form_initial,
+    extract_motor_params, extract_motor_params_from_pdf, MOTOR_PARAM_LABELS,
+)
 
 # Raw strings so backslashes reach KaTeX unchanged.
 FORMULAS = {
@@ -71,17 +74,28 @@ def _spec_fields_from_form(sd: dict) -> dict:
         'spec_painting':          sd.get('spec_painting', '') or '',
         'spec_motor_certificate': sd.get('spec_motor_certificate', '') or '',
         'spec_weight_kg':         sd.get('spec_weight_kg'),
+        'spec_efficiency_class':  sd.get('spec_efficiency_class', '') or '',
+        'spec_voltage':           sd.get('spec_voltage', '') or '',
     }
 
 
 def index(request):
     results = None
-    save_form = SaveCalculationForm()
     form = DrivetrainForm()
     specs_form = MotorSpecsForm()
     datasheet = None
     datasheet_json = ''
     compliance = None
+
+    _load_fields = [
+        'crane_torque_max', 'crane_torque_nom', 'worm_ratio', 'worm_efficiency',
+        'motor_speed', 'gearbox_output_speed', 'motor_rated_torque', 'starting_factor',
+        'supplier_motor_power_kw', 'supplier_motor_rated_torque',
+        'supplier_motor_starting_torque', 'supplier_gearbox_rated_torque',
+        'supplier_bevel_ratio', 'supplier_worm_ratio',
+    ]
+    if request.method == 'GET' and any(k in request.GET for k in _load_fields):
+        form = DrivetrainForm(initial={k: request.GET[k] for k in _load_fields if k in request.GET})
 
     if request.method == 'POST':
         form = DrivetrainForm(request.POST)
@@ -109,6 +123,16 @@ def index(request):
         if specs_form.is_valid():
             compliance = check_compliance(specs_form.cleaned_data)
 
+    save_initial = {}
+    if datasheet:
+        save_initial = {
+            'supplier_name':   datasheet.get('supplier', ''),
+            'crane_type':      datasheet.get('crane_type', ''),
+            'price_prototype': datasheet.get('price_prototype'),
+            'price_series':    datasheet.get('price_series'),
+        }
+    save_form = SaveCalculationForm(initial=save_initial)
+
     return render(request, 'calculator/index.html', {
         'form': form,
         'specs_form': specs_form,
@@ -122,27 +146,84 @@ def index(request):
     })
 
 
+def _datasheet_result(request, datasheet, specs, crane_type, motor_params):
+    """Shared render for the datasheet result page (PDF and text paths)."""
+    form_initial = specs_to_form_initial(specs)
+    compliance = check_compliance(form_initial)
+    found = {k: v for k, v in motor_params.items() if v is not None}
+    has_supplier_params = any(k.startswith('supplier_') for k in found)
+    param_display = [
+        {'label': MOTOR_PARAM_LABELS[k][0], 'value': v, 'unit': MOTOR_PARAM_LABELS[k][1]}
+        for k, v in found.items() if k in MOTOR_PARAM_LABELS
+    ]
+    datasheet_json = json.dumps(datasheet)
+    return render(request, 'calculator/datasheet_result.html', {
+        'datasheet':          datasheet,
+        'datasheet_json':     datasheet_json,
+        'compliance':         compliance,
+        'form':               DrivetrainForm(initial=found),
+        'specs_form':         MotorSpecsForm(initial=form_initial),
+        'save_form':          SaveCalculationForm(initial={'crane_type': crane_type}),
+        'motor_params':       found,
+        'param_display':      param_display,
+        'has_supplier_params': has_supplier_params,
+        'active_page':        'calculator',
+        **FORMULAS,
+    })
+
+
 def upload_datasheet(request):
     if request.method == 'GET':
         return render(request, 'calculator/datasheet_upload.html', {
-            'form': DatasheetUploadForm(),
-            'active_page': 'calculator',
+            'pdf_form':  DatasheetUploadForm(),
+            'text_form': TextDatasheetForm(),
+            'active_tab': 'pdf',
+            'active_page': 'upload',
         })
 
+    source = request.POST.get('source', 'pdf')
+
+    # ── Text path ────────────────────────────────────────────────────────────
+    if source == 'text':
+        form = TextDatasheetForm(request.POST)
+        if not form.is_valid():
+            return render(request, 'calculator/datasheet_upload.html', {
+                'pdf_form':   DatasheetUploadForm(),
+                'text_form':  form,
+                'active_tab': 'text',
+                'active_page': 'upload',
+            })
+        text       = form.cleaned_data['text_content']
+        supplier   = form.cleaned_data['supplier_name']
+        crane_type = form.cleaned_data['crane_type']
+        raw_proto  = form.cleaned_data.get('price_prototype')
+        raw_series = form.cleaned_data.get('price_series')
+        specs        = parse_text(text)
+        motor_params = extract_motor_params(text)
+        datasheet = {
+            'supplier':        supplier,
+            'crane_type':      crane_type,
+            'price_prototype': float(raw_proto)  if raw_proto  else None,
+            'price_series':    float(raw_series) if raw_series else None,
+            'specs':           specs,
+        }
+        return _datasheet_result(request, datasheet, specs, crane_type, motor_params)
+
+    # ── PDF path ─────────────────────────────────────────────────────────────
     form = DatasheetUploadForm(request.POST, request.FILES)
     if not form.is_valid():
         return render(request, 'calculator/datasheet_upload.html', {
-            'form': form,
-            'active_page': 'calculator',
+            'pdf_form':   form,
+            'text_form':  TextDatasheetForm(),
+            'active_tab': 'pdf',
+            'active_page': 'upload',
         })
 
-    pdf_file = request.FILES['pdf_file']
-    supplier = form.cleaned_data['supplier_name']
+    pdf_file   = request.FILES['pdf_file']
+    supplier   = form.cleaned_data['supplier_name']
     crane_type = form.cleaned_data['crane_type']
     raw_proto  = form.cleaned_data.get('price_prototype')
     raw_series = form.cleaned_data.get('price_series')
-    price_proto  = float(raw_proto)  if raw_proto  else None
-    price_series = float(raw_series) if raw_series else None
 
     tmp_path = None
     try:
@@ -150,39 +231,28 @@ def upload_datasheet(request):
             tmp_path = tmp.name
             for chunk in pdf_file.chunks():
                 tmp.write(chunk)
-        specs = parse_datasheet(tmp_path)
+        specs        = parse_datasheet(tmp_path)
+        motor_params = extract_motor_params_from_pdf(tmp_path)
     except Exception as exc:
         form.add_error('pdf_file', f'Could not read PDF: {exc}')
         return render(request, 'calculator/datasheet_upload.html', {
-            'form': form,
-            'active_page': 'calculator',
+            'pdf_form':   form,
+            'text_form':  TextDatasheetForm(),
+            'active_tab': 'pdf',
+            'active_page': 'upload',
         })
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
-    form_initial = specs_to_form_initial(specs)
-    compliance = check_compliance(form_initial)
-
     datasheet = {
         'supplier':        supplier,
         'crane_type':      crane_type,
-        'price_prototype': price_proto,
-        'price_series':    price_series,
+        'price_prototype': float(raw_proto)  if raw_proto  else None,
+        'price_series':    float(raw_series) if raw_series else None,
         'specs':           specs,
     }
-    datasheet_json = json.dumps(datasheet)
-
-    return render(request, 'calculator/datasheet_result.html', {
-        'datasheet':      datasheet,
-        'datasheet_json': datasheet_json,
-        'compliance':     compliance,
-        'form':           DrivetrainForm(),
-        'specs_form':     MotorSpecsForm(initial=form_initial),
-        'save_form':      SaveCalculationForm(initial={'crane_type': crane_type}),
-        'active_page':    'calculator',
-        **FORMULAS,
-    })
+    return _datasheet_result(request, datasheet, specs, crane_type, motor_params)
 
 
 def save_calculation(request):
@@ -212,9 +282,17 @@ def save_calculation(request):
             supplier_bevel_ratio=d.get('supplier_bevel_ratio'),
             supplier_worm_ratio=d.get('supplier_worm_ratio'),
         )
-        ds, _ = _load_datasheet(request.POST)
-        price_proto  = Decimal(str(ds['price_prototype']))  if ds and ds.get('price_prototype')  else None
-        price_series = Decimal(str(ds['price_series']))     if ds and ds.get('price_series')     else None
+        # Prices: prefer save_form fields, fall back to datasheet JSON
+        raw_proto  = save_form.cleaned_data.get('price_prototype')
+        raw_series = save_form.cleaned_data.get('price_series')
+        if not raw_proto or not raw_series:
+            ds, _ = _load_datasheet(request.POST)
+            if not raw_proto and ds and ds.get('price_prototype'):
+                raw_proto  = Decimal(str(ds['price_prototype']))
+            if not raw_series and ds and ds.get('price_series'):
+                raw_series = Decimal(str(ds['price_series']))
+        price_proto  = raw_proto  if raw_proto  else None
+        price_series = raw_series if raw_series else None
 
         spec_data = _spec_fields_from_form(sd)
 
@@ -260,7 +338,7 @@ def save_calculation(request):
     return render(request, 'calculator/index.html', {
         'form':           calc_form,
         'specs_form':     specs_form,
-        'save_form':      save_form,
+        'save_form':      save_form,  # already bound with POST data
         'results':        results,
         'datasheet':      datasheet,
         'datasheet_json': datasheet_json,

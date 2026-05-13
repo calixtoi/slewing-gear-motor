@@ -1,16 +1,19 @@
 {% extends 'calculator/base.html' %}
 
 {% block content %}
-<div class="d-flex align-items-center mb-3">
-  <h5 class="mb-0"><i class="bi bi-journal-code me-2"></i>Formula Reference</h5>
-  <span class="text-muted small ms-3">
-    Complete drivetrain sizing chain: Motor → Bevel Gearbox → Worm Gear → Slewing Ring
-  </span>
+<div class="card shadow-sm mb-3 p-3" style="background:rgba(255,255,255,0.97)">
+  <div class="d-flex align-items-center mb-1">
+    <h5 class="mb-0 text-dark"><i class="bi bi-journal-code me-2"></i>Formula Reference</h5>
+    <span class="text-muted small ms-3">
+      Complete drivetrain sizing chain: Motor → Bevel Gearbox → Worm Gear → Slewing Ring
+    </span>
+  </div>
+  <p class="text-muted small mb-0">
+    All formulas rendered with KaTeX. Use this page to verify any calculation step.
+  </p>
 </div>
-<p class="text-muted small mb-4">
-  Based on the Palfinger / Z-Systems sizing sheets.
-  All formulas rendered with KaTeX — use this page to verify any calculation step.
-</p>
 
-{% include 'calculator/_formula_cards.html' %}
+<div class="card shadow-sm p-3" style="background:rgba(255,255,255,0.97)">
+  {% include 'calculator/_formula_cards.html' %}
+</div>
 {% endblock %}

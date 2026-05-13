@@ -1,19 +1,19 @@
 {% extends 'calculator/base.html' %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h5 class="text-white mb-0"><i class="bi bi-table me-2"></i>Motor Comparison</h5>
+<div class="card shadow-sm mb-3 px-3 py-2 d-flex flex-row align-items-center justify-content-between" style="background:rgba(255,255,255,0.97)">
+  <h5 class="mb-0 text-dark"><i class="bi bi-table me-2"></i>Motor Comparison</h5>
   <div class="btn-group btn-group-sm" role="group">
     <a href="{% url 'comparison' %}"
-       class="btn {% if not crane_filter %}btn-primary{% else %}btn-outline-secondary text-white{% endif %}">
+       class="btn {% if not crane_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       All
     </a>
     <a href="{% url 'comparison' %}?crane=standard_pf"
-       class="btn {% if crane_filter == 'standard_pf' %}btn-primary{% else %}btn-outline-secondary text-white{% endif %}">
+       class="btn {% if crane_filter == 'standard_pf' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       <i class="bi bi-crane me-1"></i>Standard PF
     </a>
     <a href="{% url 'comparison' %}?crane=pf_xxl"
-       class="btn {% if crane_filter == 'pf_xxl' %}btn-primary{% else %}btn-outline-secondary text-white{% endif %}">
+       class="btn {% if crane_filter == 'pf_xxl' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       <i class="bi bi-arrows-fullscreen me-1"></i>PF-XXL
     </a>
   </div>
@@ -101,7 +101,7 @@
         <tr>
           <th style="min-width:160px">Supplier</th>
           <th style="min-width:110px">Frame Material<br><small class="text-muted fw-normal">req: Cast Iron</small></th>
-          <th style="min-width:90px">Flange<br><small class="text-muted fw-normal">req: Ø165mm</small></th>
+          <th style="min-width:90px">Flange<br><small class="text-muted fw-normal">req: Ø160mm</small></th>
           <th style="min-width:90px">Shaft<br><small class="text-muted fw-normal">req: Ø32k6</small></th>
           <th style="min-width:100px">Cooling<br><small class="text-muted fw-normal">req: IC410</small></th>
           <th style="min-width:80px">IP<br><small class="text-muted fw-normal">req: IP66</small></th>
@@ -112,6 +112,8 @@
           <th style="min-width:80px">Insul. Cl.</th>
           <th style="min-width:80px">Duty Cycle</th>
           <th style="min-width:80px">Certificate</th>
+          <th style="min-width:90px">Efficiency<br><small class="text-muted fw-normal">req: IE2+</small></th>
+          <th style="min-width:120px">Voltage<br><small class="text-muted fw-normal">req: 400/690V 50Hz<br>400/480/690V 60Hz</small></th>
           <th style="min-width:70px">Weight</th>
         </tr>
       </thead>
@@ -129,7 +131,7 @@
 
           {# Output Flange #}
           {% with v=c.spec_output_flange %}
-          <td class="small {% if v %}{% if '165' in v %}table-success{% else %}table-danger{% endif %}{% endif %}">
+          <td class="small {% if v %}{% if '160' in v %}table-success{% else %}table-danger{% endif %}{% endif %}">
             {{ v|default:"—" }}
           </td>
           {% endwith %}
@@ -191,6 +193,20 @@
 
           {# Certificate #}
           <td class="small">{{ c.spec_motor_certificate|default:"—" }}</td>
+
+          {# Efficiency Class #}
+          {% with v=c.spec_efficiency_class %}
+          <td class="small {% if v %}{% if 'ie2' in v|lower or 'ie3' in v|lower or 'ie4' in v|lower %}table-success{% else %}table-danger{% endif %}{% endif %}">
+            {{ v|default:"—" }}
+          </td>
+          {% endwith %}
+
+          {# Voltage #}
+          {% with v=c.spec_voltage %}
+          <td class="small {% if v %}{% if '400' in v or '690' in v or '480' in v %}table-success{% else %}table-danger{% endif %}{% endif %}">
+            {{ v|default:"—" }}
+          </td>
+          {% endwith %}
 
           {# Weight #}
           <td class="small">

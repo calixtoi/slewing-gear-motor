@@ -49,6 +49,8 @@ class MotorCalculation(models.Model):
     spec_painting         = models.CharField(max_length=500, blank=True, default='')
     spec_motor_certificate = models.CharField(max_length=200, blank=True, default='')
     spec_weight_kg        = models.FloatField(null=True, blank=True)
+    spec_efficiency_class = models.CharField(max_length=20,  blank=True, default='')
+    spec_voltage          = models.CharField(max_length=100, blank=True, default='')
 
     # ── Key results (stored for list display; detail re-runs engine) ──────────
     torque_check = models.CharField(max_length=20)

@@ -91,18 +91,37 @@
           <div class="mt-3">
             <button class="btn btn-outline-warning btn-sm w-100 d-flex justify-content-between align-items-center"
                     type="button" data-bs-toggle="collapse" data-bs-target="#specsSection">
-              <span><i class="bi bi-clipboard-check me-1"></i>Motor Specifications
+              <span><i class="bi bi-clipboard-check me-1"></i>Motor Specifications — PF Crane Requirements
                 {% if compliance %}
                   {% for c in compliance %}{% if c.status == 'FAIL' %}<span class="badge bg-danger ms-1" style="font-size:.6rem">!</span>{% endif %}{% endfor %}
                 {% endif %}
               </span>
-              <i class="bi bi-chevron-down"></i>
+              <i class="bi bi-chevron-up"></i>
             </button>
-            <div class="collapse {% if compliance %}show{% endif %}" id="specsSection">
+            <div class="collapse show" id="specsSection">
               <div class="mt-2 p-2 rounded border" style="background:rgba(255,255,255,.06)">
                 <p class="text-muted small mb-2" style="font-size:.72rem">
-                  PF crane required specs. Auto-filled from datasheet or enter manually.
+                  Enter the motor's actual values below. Required PF crane values are shown in
+                  <span class="text-warning fw-semibold">yellow</span>.
+                  Auto-filled from datasheet or enter manually.
                 </p>
+                <table class="table table-sm mb-2" style="font-size:.72rem;color:#ccc">
+                  <thead><tr><th class="py-1 text-muted">Parameter</th><th class="py-1 text-warning">Required value</th></tr></thead>
+                  <tbody>
+                    <tr><td>Frame Material</td><td class="text-warning">Cast Iron (GJL/GG)</td></tr>
+                    <tr><td>Input Flange</td><td class="text-warning">Ø160 mm</td></tr>
+                    <tr><td>Output Shaft</td><td class="text-warning">32 × 50 mm</td></tr>
+                    <tr><td>Cooling Method</td><td class="text-warning">IC410 TENV (Totally Enclosed Non-Ventilated)</td></tr>
+                    <tr><td>IP Rating</td><td class="text-warning">IP66 minimum</td></tr>
+                    <tr><td>Ambient Temperature</td><td class="text-warning">Low end ≤ −20°C, high end ≥ +45°C (wider range accepted)</td></tr>
+                    <tr><td>Standstill Heater</td><td class="text-warning">24 VDC</td></tr>
+                    <tr><td>Coating</td><td class="text-warning">C5H per EN 12944-5</td></tr>
+                    <tr><td>Top Color</td><td class="text-warning">RAL7035</td></tr>
+                    <tr><td>Voltage / Frequency</td><td class="text-warning">400/690 V 50 Hz &amp; 400/480/690 V 60 Hz</td></tr>
+                    <tr><td>Efficiency Class</td><td class="text-warning">IE2 or higher</td></tr>
+                    <tr><td>Insulation Class</td><td class="text-warning">Class H</td></tr>
+                  </tbody>
+                </table>
                 <div class="row g-2">
                   <div class="col-6">
                     <label class="form-label mb-1 small">{{ specs_form.spec_frame_material.label }}</label>
@@ -151,6 +170,14 @@
                   <div class="col-6">
                     <label class="form-label mb-1 small">{{ specs_form.spec_motor_certificate.label }}</label>
                     {{ specs_form.spec_motor_certificate }}
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label mb-1 small">{{ specs_form.spec_efficiency_class.label }}</label>
+                    {{ specs_form.spec_efficiency_class }}
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label mb-1 small">{{ specs_form.spec_voltage.label }}</label>
+                    {{ specs_form.spec_voltage }}
                   </div>
                   <div class="col-12">
                     <label class="form-label mb-1 small">{{ specs_form.spec_painting.label }}</label>
@@ -331,8 +358,9 @@
 
     {# Results table #}
     <div class="card shadow-sm mb-3">
-      <div class="card-header bg-dark text-white">
-        <i class="bi bi-table me-2"></i>Calculation Steps
+      <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-table me-2"></i>Calculation Steps</span>
+        <small class="text-muted" style="font-size:.68rem"><i class="bi bi-hand-index me-1"></i>Click a row to see the formula</small>
       </div>
       <div class="card-body p-0">
         <table class="table table-sm table-hover mb-0">
@@ -340,20 +368,215 @@
             <tr><th>Step</th><th>Parameter</th><th>Symbol</th><th class="text-end">Value</th><th>Unit</th></tr>
           </thead>
           <tbody>
-            <tr class="result-row"><td><span class="step-badge">1</span></td><td>Worm shaft torque (max)</td><td>{% latexify "M_{2,\\max}" math_inline=True %}</td><td class="text-end">{{ results.worm_input_torque_max }}</td><td>Nm</td></tr>
-            <tr class="result-row"><td><span class="step-badge">2</span></td><td>Worm shaft torque (nominal)</td><td>{% latexify "M_{2,\\text{nom}}" math_inline=True %}</td><td class="text-end">{% if results.worm_input_torque_nom is not None %}{{ results.worm_input_torque_nom }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td><td>Nm</td></tr>
-            <tr class="result-row"><td><span class="step-badge">3</span></td><td>Required gearbox torque</td><td>{% latexify "M_{\\text{gear,req}}" math_inline=True %}</td><td class="text-end">{% if results.gearbox_required_torque is not None %}{{ results.gearbox_required_torque }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td><td>Nm</td></tr>
-            <tr class="result-row"><td><span class="step-badge">4</span></td><td>Bevel gearbox ratio</td><td>{% latexify "i_{\\text{bevel}}" math_inline=True %}</td><td class="text-end">{{ results.bevel_ratio }}</td><td>—</td></tr>
-            <tr class="result-row"><td><span class="step-badge">5</span></td><td>Slewing speed</td><td>{% latexify "n_{\\text{slew}}" math_inline=True %}</td><td class="text-end">{{ results.slewing_speed_rpm }}</td><td>rpm</td></tr>
-            <tr class="result-row"><td><span class="step-badge">6</span></td><td>Motor torque required</td><td>{% latexify "M_{\\text{motor,req}}" math_inline=True %}</td><td class="text-end">{{ results.motor_torque_required }}</td><td>Nm</td></tr>
-            <tr class="result-row"><td><span class="step-badge">7</span></td><td>Motor starting torque available</td><td>{% latexify "M_{\\text{start}}" math_inline=True %}</td><td class="text-end">{{ results.motor_start_torque }}</td><td>Nm</td></tr>
-            <tr class="result-row {% if results.torque_check == 'OK' %}table-success{% elif results.torque_check == 'Marginal' %}table-warning{% else %}table-danger{% endif %}">
-              <td><span class="step-badge">8</span></td><td>Torque check</td>
-              <td>{% latexify "\\text{margin}" math_inline=True %}</td>
-              <td class="text-end">{{ results.torque_margin }}×</td>
-              <td>{% if results.torque_check == 'OK' %}<span class="badge badge-ok">OK</span>{% elif results.torque_check == 'Marginal' %}<span class="badge badge-marginal">Marginal</span>{% else %}<span class="badge badge-fail">Too small</span>{% endif %}</td>
+
+            {# Step 1 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s1d" aria-expanded="false">
+              <td><span class="step-badge">1</span></td>
+              <td>Worm shaft torque (max)</td>
+              <td>{% latexify "M_{2,\\max}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.worm_input_torque_max }}</td>
+              <td>Nm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
             </tr>
-            <tr class="result-row"><td><span class="step-badge">9</span></td><td>Motor rated power <small class="text-muted">(from M_n × n)</small></td><td>{% latexify "P_{\\text{rated}}" math_inline=True %}</td><td class="text-end">{{ results.motor_power_kw }}</td><td>kW</td></tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s1d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f1 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ form.crane_torque_max.value }} / ({{ form.worm_ratio.value }} × {{ form.worm_efficiency.value }}) = {{ results.worm_input_torque_max }} Nm</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 2 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s2d" aria-expanded="false">
+              <td><span class="step-badge">2</span></td>
+              <td>Worm shaft torque (nominal)</td>
+              <td>{% latexify "M_{2,\\text{nom}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{% if results.worm_input_torque_nom is not None %}{{ results.worm_input_torque_nom }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
+              <td>Nm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s2d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f2 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      {% if results.worm_input_torque_nom is not None %}
+                      <code>{{ form.crane_torque_nom.value }} / ({{ form.worm_ratio.value }} × {{ form.worm_efficiency.value }}) = {{ results.worm_input_torque_nom }} Nm</code>
+                      {% else %}<span class="text-muted fst-italic">M_Nenn not provided — enter Nominal torque to enable this step</span>{% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 3 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s3d" aria-expanded="false">
+              <td><span class="step-badge">3</span></td>
+              <td>Required gearbox torque</td>
+              <td>{% latexify "M_{\\text{gear,req}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{% if results.gearbox_required_torque is not None %}{{ results.gearbox_required_torque }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
+              <td>Nm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s3d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f3 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      {% if results.gearbox_required_torque is not None %}
+                      <code>{{ results.worm_input_torque_nom }} × 1.34 = {{ results.gearbox_required_torque }} Nm</code>
+                      {% else %}<span class="text-muted fst-italic">Requires M_Nenn (Step 2)</span>{% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 4 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s4d" aria-expanded="false">
+              <td><span class="step-badge">4</span></td>
+              <td>Bevel gearbox ratio</td>
+              <td>{% latexify "i_{\\text{bevel}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.bevel_ratio }}</td>
+              <td>— <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s4d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f4 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ form.motor_speed.value }} / {{ form.gearbox_output_speed.value }} = {{ results.bevel_ratio }}</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 5 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s5d" aria-expanded="false">
+              <td><span class="step-badge">5</span></td>
+              <td>Slewing speed</td>
+              <td>{% latexify "n_{\\text{slew}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.slewing_speed_rpm }}</td>
+              <td>rpm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s5d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f5 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ form.gearbox_output_speed.value }} / {{ form.worm_ratio.value }} = {{ results.slewing_speed_rpm }} rpm</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 6 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s6d" aria-expanded="false">
+              <td><span class="step-badge">6</span></td>
+              <td>Motor torque required</td>
+              <td>{% latexify "M_{\\text{motor,req}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.motor_torque_required }}</td>
+              <td>Nm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s6d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f6 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ results.worm_input_torque_max }} / {{ results.bevel_ratio }} = {{ results.motor_torque_required }} Nm</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 7 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s7d" aria-expanded="false">
+              <td><span class="step-badge">7</span></td>
+              <td>Motor starting torque available</td>
+              <td>{% latexify "M_{\\text{start}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.motor_start_torque }}</td>
+              <td>Nm <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s7d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f7 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ form.motor_rated_torque.value }} × {{ form.starting_factor.value }} = {{ results.motor_start_torque }} Nm</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 8 #}
+            <tr class="result-row {% if results.torque_check == 'OK' %}table-success{% elif results.torque_check == 'Marginal' %}table-warning{% else %}table-danger{% endif %}"
+                style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s8d" aria-expanded="false">
+              <td><span class="step-badge">8</span></td>
+              <td>Torque check</td>
+              <td>{% latexify "\\text{margin}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.torque_margin }}×</td>
+              <td>
+                {% if results.torque_check == 'OK' %}<span class="badge badge-ok">OK</span>
+                {% elif results.torque_check == 'Marginal' %}<span class="badge badge-marginal">Marginal</span>
+                {% else %}<span class="badge badge-fail">Too small</span>{% endif %}
+                <i class="bi bi-chevron-down text-muted ms-1" style="font-size:.65rem"></i>
+              </td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s8d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f8 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>{{ results.motor_start_torque }} / {{ results.motor_torque_required }} = {{ results.torque_margin }}× → {{ results.torque_check }}</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
+            {# Step 9 #}
+            <tr class="result-row" style="cursor:pointer"
+                data-bs-toggle="collapse" data-bs-target="#s9d" aria-expanded="false">
+              <td><span class="step-badge">9</span></td>
+              <td>Motor rated power <small class="text-muted">(from M_n × n)</small></td>
+              <td>{% latexify "P_{\\text{rated}}" math_inline=True %}</td>
+              <td class="text-end font-monospace">{{ results.motor_power_kw }}</td>
+              <td>kW <i class="bi bi-chevron-down text-muted" style="font-size:.65rem"></i></td>
+            </tr>
+            <tr><td colspan="5" class="p-0 border-0">
+              <div class="collapse" id="s9d">
+                <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
+                  <div class="d-flex flex-wrap gap-4 align-items-start">
+                    <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f9 math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
+                      <code>({{ form.motor_rated_torque.value }} × {{ form.motor_speed.value }}) / 9550 = {{ results.motor_power_kw }} kW</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td></tr>
+
           </tbody>
         </table>
       </div>
@@ -452,6 +675,14 @@
             <div class="col-sm-4">
               <label class="form-label mb-1">{{ save_form.crane_type.label }}</label>
               {{ save_form.crane_type }}
+            </div>
+            <div class="col-sm-3">
+              <label class="form-label mb-1">{{ save_form.price_prototype.label }}</label>
+              {{ save_form.price_prototype }}
+            </div>
+            <div class="col-sm-3">
+              <label class="form-label mb-1">{{ save_form.price_series.label }}</label>
+              {{ save_form.price_series }}
             </div>
             <div class="col-sm-3">
               <button type="submit" class="btn btn-success btn-sm w-100">
