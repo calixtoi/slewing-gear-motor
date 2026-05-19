@@ -85,6 +85,15 @@
               <label class="form-label mb-1">{{ form.gearbox_output_speed.label }}</label>
               {{ form.gearbox_output_speed }}
             </div>
+            <div class="col-6">
+              <label class="form-label mb-1">{{ form.gear_ratio.label }}</label>
+              {{ form.gear_ratio }}
+            </div>
+          </div>
+          <div class="row g-2 mt-0">
+            <div class="col-12">
+              <small class="text-muted">Provide either <strong>n_gear_out</strong> or <strong>i</strong> — if ratio is given, output speed is computed as n_motor ÷ i.</small>
+            </div>
           </div>
 
           {# Motor Specifications — compliance check fields #}
@@ -452,10 +461,20 @@
               <div class="collapse" id="s4d">
                 <div class="px-3 py-2" style="background:rgba(13,110,253,.07);border-bottom:1px solid #dee2e6;font-size:.78rem">
                   <div class="d-flex flex-wrap gap-4 align-items-start">
+                    {% if form.gear_ratio.value and not form.gearbox_output_speed.value %}
+                    <div><span class="text-muted fw-semibold small">FORMULA (inverse — ratio given)</span><br>{% latexify f4_inv math_inline=True %}</div>
+                    <div><span class="text-muted fw-semibold small">n_gear_out computed</span><br>
+                      <code>{{ form.motor_speed.value }} / {{ form.gear_ratio.value }} = {{ results.n_gear_out }} rpm</code>
+                    </div>
+                    <div><span class="text-muted fw-semibold small">i_bevel = gear ratio</span><br>
+                      <code>{{ results.bevel_ratio }}</code>
+                    </div>
+                    {% else %}
                     <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f4 math_inline=True %}</div>
                     <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
                       <code>{{ form.motor_speed.value }} / {{ form.gearbox_output_speed.value }} = {{ results.bevel_ratio }}</code>
                     </div>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -476,7 +495,7 @@
                   <div class="d-flex flex-wrap gap-4 align-items-start">
                     <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f5 math_inline=True %}</div>
                     <div><span class="text-muted fw-semibold small">SUBSTITUTION</span><br>
-                      <code>{{ form.gearbox_output_speed.value }} / {{ form.worm_ratio.value }} = {{ results.slewing_speed_rpm }} rpm</code>
+                      <code>{{ results.n_gear_out }} / {{ form.worm_ratio.value }} = {{ results.slewing_speed_rpm }} rpm</code>
                     </div>
                   </div>
                 </div>

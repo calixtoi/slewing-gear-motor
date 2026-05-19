@@ -75,6 +75,7 @@ def drivetrain_sizing(
 
     # Step 4 — Bevel gearbox ratio
     # i_bevel = n_motor / n_gear_out
+    r['n_gear_out'] = gearbox_output_speed
     r['bevel_ratio'] = motor_speed / gearbox_output_speed
 
     # Step 5 — Slewing speed
@@ -174,7 +175,7 @@ def drivetrain_sizing(
 
     # Round all numeric results for display (guard None for optional steps 2 & 3)
     for key in ('worm_input_torque_max', 'worm_input_torque_nom',
-                'gearbox_required_torque', 'bevel_ratio',
+                'gearbox_required_torque', 'n_gear_out', 'bevel_ratio',
                 'slewing_speed_rpm', 'motor_torque_required',
                 'motor_start_torque', 'torque_margin', 'motor_power_kw'):
         if r[key] is not None:

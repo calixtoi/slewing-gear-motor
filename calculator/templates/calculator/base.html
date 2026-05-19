@@ -151,6 +151,11 @@
     <i class="bi bi-table"></i> Motor Comparison
   </a>
 
+  <a href="{% url 'requirements' %}"
+     class="sidebar-link {% if active_page == 'requirements' %}active{% endif %}">
+    <i class="bi bi-file-earmark-ruled"></i> Motor Requirements
+  </a>
+
   <a href="{% url 'formulas' %}"
      class="sidebar-link {% if active_page == 'formulas' %}active{% endif %}">
     <i class="bi bi-journal-code"></i> Formula Reference

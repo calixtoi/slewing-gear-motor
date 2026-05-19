@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import DrivetrainForm, SaveCalculationForm, DatasheetUploadForm, MotorSpecsForm, TextDatasheetForm
-from .engine import drivetrain_sizing
+from .engine import drivetrain_sizing, SAFETY_FACTOR
 from .models import MotorCalculation
 from .pdf_parser import (
     parse_datasheet, parse_text, check_compliance, specs_to_form_initial,
@@ -17,7 +17,8 @@ FORMULAS = {
     'f1':  r'M_{2,\max} = \dfrac{M_{\max}}{i_{\text{worm}} \cdot \eta}',
     'f2':  r'M_{2,\text{nom}} = \dfrac{M_{\text{nom}}}{i_{\text{worm}} \cdot \eta}',
     'f3':  r'M_{\text{gear,req}} = M_{2,\text{nom}} \times S_f \qquad S_f = 1.34',
-    'f4':  r'i_{\text{bevel}} = \dfrac{n_{\text{motor}}}{n_{\text{gear,out}}}',
+    'f4':     r'i_{\text{bevel}} = \dfrac{n_{\text{motor}}}{n_{\text{gear,out}}}',
+    'f4_inv': r'n_{\text{gear,out}} = \dfrac{n_{\text{motor}}}{i_{\text{bevel}}}',
     'f5':  r'n_{\text{slew}} = \dfrac{n_{\text{gear,out}}}{i_{\text{worm}}}',
     'f6':  r'M_{\text{motor,req}} = \dfrac{M_{2,\max}}{i_{\text{bevel}}}',
     'f7':  r'M_{\text{start}} = M_n \cdot k_{\text{start}}, \qquad k_{\text{start}} = \dfrac{M_a}{M_n}',
@@ -79,6 +80,13 @@ def _spec_fields_from_form(sd: dict) -> dict:
     }
 
 
+def _effective_gearbox_speed(d):
+    """Return gearbox output speed: direct input wins; otherwise compute from gear ratio."""
+    if d.get('gearbox_output_speed'):
+        return d['gearbox_output_speed']
+    return d['motor_speed'] / d['gear_ratio']
+
+
 def index(request):
     results = None
     form = DrivetrainForm()
@@ -89,7 +97,7 @@ def index(request):
 
     _load_fields = [
         'crane_torque_max', 'crane_torque_nom', 'worm_ratio', 'worm_efficiency',
-        'motor_speed', 'gearbox_output_speed', 'motor_rated_torque', 'starting_factor',
+        'motor_speed', 'gearbox_output_speed', 'gear_ratio', 'motor_rated_torque', 'starting_factor',
         'supplier_motor_power_kw', 'supplier_motor_rated_torque',
         'supplier_motor_starting_torque', 'supplier_gearbox_rated_torque',
         'supplier_bevel_ratio', 'supplier_worm_ratio',
@@ -103,13 +111,14 @@ def index(request):
         datasheet, datasheet_json = _load_datasheet(request.POST)
         if form.is_valid():
             d = form.cleaned_data
+            n_gear_out_eff = _effective_gearbox_speed(d)
             results = drivetrain_sizing(
                 crane_torque_max=d['crane_torque_max'],
                 crane_torque_nom=d.get('crane_torque_nom'),
                 worm_ratio=d['worm_ratio'],
                 worm_efficiency=d['worm_efficiency'],
                 motor_speed=d['motor_speed'],
-                gearbox_output_speed=d['gearbox_output_speed'],
+                gearbox_output_speed=n_gear_out_eff,
                 motor_rated_torque=d['motor_rated_torque'],
                 starting_factor=d['starting_factor'],
                 supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
@@ -266,13 +275,14 @@ def save_calculation(request):
     if calc_form.is_valid() and save_form.is_valid():
         d  = calc_form.cleaned_data
         sd = specs_form.cleaned_data if specs_form.is_valid() else {}
+        n_gear_out_eff = _effective_gearbox_speed(d)
         results = drivetrain_sizing(
             crane_torque_max=d['crane_torque_max'],
             crane_torque_nom=d.get('crane_torque_nom'),
             worm_ratio=d['worm_ratio'],
             worm_efficiency=d['worm_efficiency'],
             motor_speed=d['motor_speed'],
-            gearbox_output_speed=d['gearbox_output_speed'],
+            gearbox_output_speed=n_gear_out_eff,
             motor_rated_torque=d['motor_rated_torque'],
             starting_factor=d['starting_factor'],
             supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
@@ -306,7 +316,7 @@ def save_calculation(request):
             motor_speed=d['motor_speed'],
             motor_rated_torque=d['motor_rated_torque'],
             starting_factor=d['starting_factor'],
-            gearbox_output_speed=d['gearbox_output_speed'],
+            gearbox_output_speed=n_gear_out_eff,
             supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
             supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
             supplier_motor_starting_torque=d.get('supplier_motor_starting_torque'),
@@ -325,10 +335,16 @@ def save_calculation(request):
     results = None
     if calc_form.is_valid():
         d = calc_form.cleaned_data
-        results = drivetrain_sizing(**{k: d[k] for k in (
-            'crane_torque_max', 'crane_torque_nom', 'worm_ratio', 'worm_efficiency',
-            'motor_speed', 'gearbox_output_speed', 'motor_rated_torque', 'starting_factor',
-        )})
+        results = drivetrain_sizing(
+            crane_torque_max=d['crane_torque_max'],
+            crane_torque_nom=d.get('crane_torque_nom'),
+            worm_ratio=d['worm_ratio'],
+            worm_efficiency=d['worm_efficiency'],
+            motor_speed=d['motor_speed'],
+            gearbox_output_speed=_effective_gearbox_speed(d),
+            motor_rated_torque=d['motor_rated_torque'],
+            starting_factor=d['starting_factor'],
+        )
 
     compliance = None
     if specs_form.is_valid():
@@ -384,6 +400,66 @@ def formulas(request):
         'active_page': 'formulas',
         **FORMULAS,
     })
+
+
+def requirements(request):
+    M_MAX = 62_000   # Nm — max crane slewing torque (fixed design basis)
+    I_WORM = 150     # worm gear ratio (fixed)
+    N_MOTOR = 1450   # rpm — 4-pole 50 Hz (standard selection)
+    N_MOTOR_6P = 960 # rpm — 6-pole 50 Hz (alternative)
+
+    IEC_POWERS = [0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5]
+
+    def next_iec(p):
+        return next((x for x in IEC_POWERS if x >= p), None)
+
+    def _row(eta, n_slew, ma_mn):
+        ng = round(n_slew * I_WORM, 2)
+        M2 = M_MAX / (I_WORM * eta)
+        ib = N_MOTOR / ng
+        Mr = M2 / ib   # = M_MAX * n_slew / (eta * N_MOTOR)
+        Mn = Mr / ma_mn
+        P  = Mn * N_MOTOR / 9550
+        M_start = Mn * ma_mn
+        return {
+            'eta': eta, 'n_slew': n_slew, 'ma_mn': ma_mn,
+            'M2_max':      round(M2, 1),
+            'n_gear_out':  round(ng, 1),
+            'i_bevel':     round(ib, 2),
+            'M_motor_req': round(Mr, 1),
+            'M_n':         round(Mn, 1),
+            'M_start':     round(M_start, 1),
+            'P_req':       round(P, 3),
+            'P_iec':       next_iec(P),
+            'ok':          round(M_start, 1) >= round(Mr, 1),
+        }
+
+    # Summary boundary cases (basis: η=0.35–0.45, n_slew=0.25–0.35 rpm)
+    worst = _row(0.35, 0.35, 3.0)   # worst: low η, high slew speed, low Ma/Mn
+    best  = _row(0.45, 0.25, 3.5)   # best:  high η, low slew speed, high Ma/Mn
+    typ   = _row(0.40, 0.30, 3.4)   # typical PF crane operating point
+
+    # Full sizing matrix (η × n_slew, Ma/Mn fixed at 3.4)
+    matrix = [
+        _row(eta, n_slew, 3.4)
+        for eta in [0.30, 0.35, 0.40, 0.45, 0.50]
+        for n_slew in [0.25, 0.30, 0.35]
+    ]
+
+    # Gearbox sizing torque for typical case (load spectrum method, M_nom≈40% of M_max)
+    M2_typ_nom = typ['M2_max'] * 0.40
+    gb_soll_typ = round(M2_typ_nom * SAFETY_FACTOR, 1)
+
+    context = {
+        'M_MAX': M_MAX, 'I_WORM': I_WORM, 'N_MOTOR': N_MOTOR, 'N_MOTOR_6P': N_MOTOR_6P,
+        'SF': SAFETY_FACTOR,
+        'worst': worst, 'best': best, 'typ': typ,
+        'matrix': matrix,
+        'gb_soll_typ': gb_soll_typ,
+        'active_page': 'requirements',
+        **FORMULAS,
+    }
+    return render(request, 'calculator/requirements.html', context)
 
 
 def comparison(request):

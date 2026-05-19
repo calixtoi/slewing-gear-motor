@@ -1,0 +1,482 @@
+{% extends 'calculator/base.html' %}
+{% load latexify %}
+
+{% block content %}
+
+{# ── Title ───────────────────────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-3 p-3" style="background:rgba(255,255,255,0.97)">
+  <div class="d-flex align-items-center mb-1">
+    <h5 class="mb-0 text-dark"><i class="bi bi-file-earmark-ruled me-2"></i>Motor Requirements — PF Crane</h5>
+    <span class="text-muted small ms-3">Complete sizing specification: required ranges &amp; mechanical interface</span>
+  </div>
+  <p class="text-muted small mb-0">
+    Click any row to expand the formula derivation and verify how the range was determined.
+    Use the <strong>↗ Verify</strong> links to open a pre-filled calculation in the Calculator.
+  </p>
+</div>
+
+{# ── Section 1 — Design Basis ─────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-3" style="background:rgba(255,255,255,0.97)">
+  <div class="card-header text-white fw-semibold" style="background:#1a2035">
+    <i class="bi bi-pin-angle-fill me-2"></i>Design Basis — Fixed Parameters
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0" style="font-size:.84rem">
+      <thead class="table-dark"><tr><th>Parameter</th><th>Symbol</th><th class="text-end">Value</th><th>Unit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Max crane slewing torque</td>
+            <td>{% latexify "M_{\\text{max}}" math_inline=True %}</td>
+            <td class="text-end fw-bold font-monospace">{{ M_MAX|floatformat:0 }}</td>
+            <td>Nm</td>
+            <td class="text-muted small">Worst-case crane load at full radius — structural design limit</td></tr>
+        <tr><td>Worm gear ratio</td>
+            <td>{% latexify "i_{\\text{worm}}" math_inline=True %}</td>
+            <td class="text-end fw-bold font-monospace">{{ I_WORM }}</td>
+            <td>—</td>
+            <td class="text-muted small">Fixed by slewing ring design</td></tr>
+        <tr><td>Target slewing speed</td>
+            <td>{% latexify "n_{\\text{slew}}" math_inline=True %}</td>
+            <td class="text-end fw-bold font-monospace">0.25–0.35</td>
+            <td>rpm</td>
+            <td class="text-muted small">Offshore PF crane operational requirement</td></tr>
+        <tr><td>Motor type (primary)</td>
+            <td>—</td>
+            <td class="text-end fw-bold font-monospace">{{ N_MOTOR }}</td>
+            <td>rpm</td>
+            <td class="text-muted small">4-pole IEC 50 Hz induction motor (standard selection)</td></tr>
+        <tr><td>Motor type (alternative)</td>
+            <td>—</td>
+            <td class="text-end fw-bold font-monospace">{{ N_MOTOR_6P }}</td>
+            <td>rpm</td>
+            <td class="text-muted small">6-pole IEC 50 Hz — gives lower gear ratio, same slewing speed</td></tr>
+        <tr><td>Gearbox safety factor</td>
+            <td>{% latexify "S_f" math_inline=True %}</td>
+            <td class="text-end fw-bold font-monospace">{{ SF }}</td>
+            <td>—</td>
+            <td class="text-muted small">Z-Systems catalogue selection factor (shock + application)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── Section 2 — Drivetrain Requirements (clickable) ──────────────────────── #}
+<div class="card shadow-sm mb-3" style="background:rgba(255,255,255,0.97)">
+  <div class="card-header text-white fw-semibold" style="background:#0d6efd">
+    <i class="bi bi-list-check me-2"></i>Drivetrain Sizing Requirements
+    <small class="fw-normal ms-2 opacity-75">Click rows to expand formula derivation</small>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0" style="font-size:.84rem">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Parameter</th>
+          <th>Symbol</th>
+          <th class="text-end">Min</th>
+          <th class="text-center">Typical</th>
+          <th class="text-end">Max</th>
+          <th>Unit</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {# Row 1 — Worm input torque #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r1d">
+          <td><span class="step-badge">1</span></td>
+          <td>Worm input torque</td>
+          <td>{% latexify "M_{2,\\text{max}}" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.M2_max }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.M2_max }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.M2_max }}</td>
+          <td>Nm</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r1d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f1 math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (η = 0.45)</span><br>
+                  <code>62 000 / (150 × 0.45) = {{ best.M2_max }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (η = 0.40)</span><br>
+                  <code>62 000 / (150 × 0.40) = {{ typ.M2_max }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (η = 0.35)</span><br>
+                  <code>62 000 / (150 × 0.35) = {{ worst.M2_max }} Nm</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Basis:</strong> η = 0.35–0.45 is the typical range for self-locking marine worm gears.
+                Lower η = more losses = higher torque required at the worm input shaft.
+                This is the dominant sizing driver for the entire drivetrain.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 2 — Gearbox output speed #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r2d">
+          <td><span class="step-badge">2</span></td>
+          <td>Gearbox output speed</td>
+          <td>{% latexify "n_{\\text{gear,out}}" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.n_gear_out }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.n_gear_out }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.n_gear_out }}</td>
+          <td>rpm</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r2d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA (inverse of Step 5)</span><br>
+                  {% latexify "n_{\\text{gear,out}} = n_{\\text{slew}} \\times i_{\\text{worm}}" math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (n_slew = 0.25 rpm)</span><br>
+                  <code>0.25 × 150 = 37.5 rpm</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (n_slew = 0.30 rpm)</span><br>
+                  <code>0.30 × 150 = 45.0 rpm</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (n_slew = 0.35 rpm)</span><br>
+                  <code>0.35 × 150 = 52.5 rpm</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Basis:</strong> Offshore PF cranes require 0.25–0.35 rpm for safe cargo handling.
+                Faster slewing increases pendulum risk in sea state; slower reduces productivity.
+                This range sets the required gearbox output speed = worm shaft input speed.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 3 — Bevel gear ratio #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r3d">
+          <td><span class="step-badge">3</span></td>
+          <td>Bevel gear ratio <small class="text-muted">(4-pole)</small></td>
+          <td>{% latexify "i_{\\text{bevel}}" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.i_bevel }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.i_bevel }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.i_bevel }}</td>
+          <td>—</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r3d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f4 math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (n_gear_out = 52.5 rpm)</span><br>
+                  <code>1450 / 52.5 = {{ best.i_bevel }}</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (n_gear_out = 45.0 rpm)</span><br>
+                  <code>1450 / 45.0 = {{ typ.i_bevel }}</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (n_gear_out = 37.5 rpm)</span><br>
+                  <code>1450 / 37.5 = {{ worst.i_bevel }}</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Basis:</strong> The bevel gearbox ratio is uniquely determined by motor speed ÷ required worm input speed.
+                Must be matched to a standard catalogue ratio — e.g. 27.65 : 1 or 33.4 : 1.
+                For 6-pole (960 rpm) motor: range is 18.3–25.6.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 4 — Required motor starting torque #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r4d">
+          <td><span class="step-badge">4</span></td>
+          <td>Required motor starting torque</td>
+          <td>{% latexify "M_a" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.M_motor_req }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.M_motor_req }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.M_motor_req }}</td>
+          <td>Nm</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r4d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f6 math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">SIMPLIFIED</span><br>
+                  {% latexify "M_a = \\dfrac{M_{\\text{max}} \\cdot n_{\\text{slew}}}{\\eta \\cdot n_{\\text{motor}}}" math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (η=0.45, n_slew=0.25)</span><br>
+                  <code>62000 × 0.25 / (0.45 × 1450) = {{ best.M_motor_req }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (η=0.40, n_slew=0.30)</span><br>
+                  <code>62000 × 0.30 / (0.40 × 1450) = {{ typ.M_motor_req }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (η=0.35, n_slew=0.35)</span><br>
+                  <code>62000 × 0.35 / (0.35 × 1450) = {{ worst.M_motor_req }} Nm</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Note:</strong> This is the <em>minimum</em> torque the motor must produce at standstill (locked-rotor) to start the crane
+                against maximum load. The selected motor's M_a must exceed this with a safety margin.
+                The simplified form shows that η and n_slew are the key drivers.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 5 — Motor rated torque #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r5d">
+          <td><span class="step-badge">5</span></td>
+          <td>Motor rated torque <small class="text-muted">(Ma/Mn 3.0–3.5)</small></td>
+          <td>{% latexify "M_n" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.M_n }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.M_n }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.M_n }}</td>
+          <td>Nm</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r5d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA (rearranged Step 7)</span><br>
+                  {% latexify "M_n = \\dfrac{M_a}{k_{\\text{start}}}" math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (Ma={{ best.M_motor_req }}, k=3.5)</span><br>
+                  <code>{{ best.M_motor_req }} / 3.5 = {{ best.M_n }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (Ma={{ typ.M_motor_req }}, k=3.4)</span><br>
+                  <code>{{ typ.M_motor_req }} / 3.4 = {{ typ.M_n }} Nm</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (Ma={{ worst.M_motor_req }}, k=3.0)</span><br>
+                  <code>{{ worst.M_motor_req }} / 3.0 = {{ worst.M_n }} Nm</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Basis:</strong> The rated torque M_n is the nameplate value at rated speed and rated power.
+                A motor with a higher Ma/Mn ratio allows a smaller (lower M_n) motor to start the same load —
+                Class D high-torque motors are preferred for offshore crane duty.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 6 — Starting factor #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r6d">
+          <td><span class="step-badge">6</span></td>
+          <td>Starting factor</td>
+          <td>{% latexify "M_a / M_n" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">3.0 min</td>
+          <td class="text-center font-monospace fw-bold">3.4</td>
+          <td class="text-end font-monospace text-muted">3.5+</td>
+          <td>—</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r6d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f7 math_inline=True %}</div>
+                <div>
+                  <span class="badge bg-success me-1">≥ 3.0</span>Required minimum for offshore crane duty<br>
+                  <span class="badge bg-primary me-1 mt-1">3.4</span>Recommended — typical marine crane motor<br>
+                  <span class="badge bg-secondary me-1 mt-1">3.5+</span>Optimal — Class D high-torque design
+                </div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Why ≥ 3.0?</strong> Offshore conditions include voltage drops from generator supply (−10%),
+                cold temperatures (−20°C), salt/moisture in windings, and high bearing stiction at start.
+                Each factor reduces effective starting torque. A k_start of 3.0 ensures M_a still exceeds M_req after all derating.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 7 — Motor rated power #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r7d">
+          <td><span class="step-badge">7</span></td>
+          <td>Motor rated power <small class="text-muted">(4-pole)</small></td>
+          <td>{% latexify "P_{\\text{rated}}" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">{{ best.P_req }} kW → IEC {{ best.P_iec }}</td>
+          <td class="text-center font-monospace fw-bold">{{ typ.P_req }} kW → <strong>IEC {{ typ.P_iec }}</strong></td>
+          <td class="text-end font-monospace text-danger fw-semibold">{{ worst.P_req }} kW → IEC {{ worst.P_iec }}</td>
+          <td>kW</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r7d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA</span><br>{% latexify f9 math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">MIN (M_n={{ best.M_n }} Nm)</span><br>
+                  <code>{{ best.M_n }} × 1450 / 9550 = {{ best.P_req }} kW → IEC {{ best.P_iec }} kW</code></div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (M_n={{ typ.M_n }} Nm)</span><br>
+                  <code>{{ typ.M_n }} × 1450 / 9550 = {{ typ.P_req }} kW → IEC {{ typ.P_iec }} kW</code></div>
+                <div><span class="text-muted fw-semibold small">MAX (M_n={{ worst.M_n }} Nm)</span><br>
+                  <code>{{ worst.M_n }} × 1450 / 9550 = {{ worst.P_req }} kW → IEC {{ worst.P_iec }} kW</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>IEC standard frames:</strong> … 0.75 → 1.1 → 1.5 → 2.2 → 3.0 kW.
+                Always round <em>up</em> to the next IEC frame.
+                The <strong>1.5 kW</strong> frame is the typical selection for this application.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+        {# Row 8 — Gearbox catalogue torque #}
+        <tr class="result-row" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#r8d">
+          <td><span class="step-badge">8</span></td>
+          <td>Min gearbox catalogue torque <small class="text-muted">(Step 3 method)</small></td>
+          <td>{% latexify "M_{\\text{gear,req}}" math_inline=True %}</td>
+          <td class="text-end font-monospace text-success fw-semibold">—</td>
+          <td class="text-center font-monospace fw-bold">{{ gb_soll_typ }}</td>
+          <td class="text-end font-monospace text-danger fw-semibold">—</td>
+          <td>Nm</td>
+          <td class="text-muted" style="font-size:.65rem"><i class="bi bi-chevron-down"></i></td>
+        </tr>
+        <tr><td colspan="8" class="p-0 border-0">
+          <div class="collapse" id="r8d">
+            <div class="px-3 py-2" style="background:rgba(13,110,253,.06);border-bottom:1px solid #dee2e6;font-size:.78rem">
+              <div class="d-flex flex-wrap gap-4">
+                <div><span class="text-muted fw-semibold small">FORMULA (Step 3)</span><br>{% latexify f3 math_inline=True %}</div>
+                <div><span class="text-muted fw-semibold small">TYPICAL (M₂_nom ≈ 40% of M₂_max)</span><br>
+                  <code>M₂_max = {{ typ.M2_max }} Nm → M₂_nom ≈ {{ typ.M2_max|floatformat:0 }} × 0.40 = {{ gb_soll_typ|floatformat:0 }}/{{ SF }} Nm</code><br>
+                  <code>M_gear,req = {{ gb_soll_typ }} Nm → select ≥ next catalogue rating</code></div>
+              </div>
+              <p class="text-muted mb-0 mt-2 small">
+                <strong>Note:</strong> Catalogue T2N must be ≥ M_gear,req. Typical bevel gearbox series:
+                500 → 760 → 1000 → 1400 Nm. For the typical case, select a gearbox rated ≥ {{ gb_soll_typ }} Nm.
+                Use the Load Spectrum method (GB steps) in the Calculator for a more accurate figure when M_nom is known.
+              </p>
+            </div>
+          </div>
+        </td></tr>
+
+      </tbody>
+    </table>
+  </div>{# /card-body #}
+</div>
+
+{# ── Section 3 — Sizing Matrix ────────────────────────────────────────────── #}
+<div class="card shadow-sm mb-3" style="background:rgba(255,255,255,0.97)">
+  <div class="card-header text-white fw-semibold" style="background:#198754">
+    <i class="bi bi-grid-3x3 me-2"></i>Sizing Matrix — 4-pole 1450 rpm, Ma/Mn = 3.4
+    <small class="fw-normal ms-2 opacity-75">All combinations of η × target slewing speed</small>
+  </div>
+  <div class="card-body p-0" style="overflow-x:auto">
+    <table class="table table-sm table-bordered table-hover mb-0" style="font-size:.78rem;min-width:780px">
+      <thead class="table-dark">
+        <tr>
+          <th>η</th>
+          <th>n_slew (rpm)</th>
+          <th>n_gear_out (rpm)</th>
+          <th>M₂_max (Nm)</th>
+          <th>i_bevel</th>
+          <th>M_a req (Nm)</th>
+          <th>M_n req (Nm)</th>
+          <th>P req (kW)</th>
+          <th>IEC P (kW)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in matrix %}
+        <tr {% if row.eta == 0.4 and row.n_slew == 0.3 %}class="table-primary fw-semibold"{% endif %}>
+          <td>{{ row.eta }}</td>
+          <td>{{ row.n_slew }}</td>
+          <td>{{ row.n_gear_out }}</td>
+          <td>{{ row.M2_max }}</td>
+          <td>{{ row.i_bevel }}</td>
+          <td>{{ row.M_motor_req }}</td>
+          <td>{{ row.M_n }}</td>
+          <td>{{ row.P_req }}</td>
+          <td>
+            {% if row.P_iec %}
+              <span class="badge {% if row.P_iec <= 1.5 %}bg-success{% elif row.P_iec <= 2.2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ row.P_iec }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="/?crane_torque_max={{ M_MAX }}&worm_ratio={{ I_WORM }}&worm_efficiency={{ row.eta }}&motor_speed={{ N_MOTOR }}&gear_ratio={{ row.i_bevel }}&motor_rated_torque={{ row.M_n }}&starting_factor={{ row.ma_mn }}"
+               class="btn btn-outline-primary btn-sm py-0 px-1" style="font-size:.7rem" title="Open in Calculator">
+              ↗ Verify
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="px-3 py-1 text-muted small border-top">
+      <span class="badge bg-primary me-1">Blue row</span> = Typical operating point.
+      <span class="badge bg-success me-1">Green</span> P ≤ 1.5 kW
+      <span class="badge bg-warning text-dark me-1">Yellow</span> P 1.5–2.2 kW
+      <span class="badge bg-danger me-1">Red</span> P > 2.2 kW
+    </div>
+  </div>
+</div>
+
+{# ── Section 4 — Mechanical Interface ──────────────────────────────────────── #}
+<div class="card shadow-sm mb-3" style="background:rgba(255,255,255,0.97)">
+  <div class="card-header text-white fw-semibold" style="background:#6f42c1">
+    <i class="bi bi-rulers me-2"></i>Mechanical Interface Requirements
+  </div>
+  <div class="card-body">
+
+    {# Connection chain diagram #}
+    <div class="mb-3 p-3 rounded border" style="background:#f8f9fa;font-family:monospace;font-size:.78rem;line-height:1.7">
+      <strong>Drive chain:</strong><br>
+      Motor shaft → [IEC90 B5 · Ø165 mm bolt circle] → Gearbox input<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ bevel reduction i = 27–39<br>
+      Gearbox output flange [Ø200 mm] → Adapter flange [Ø200 → Ø165 mm] → Slewing drive [Ø165 mm]<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ worm i = 150<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slewing ring → Crane rotation
+    </div>
+
+    <div class="row g-3">
+
+      {# Motor side #}
+      <div class="col-md-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold mb-2"><i class="bi bi-cpu me-1 text-primary"></i>Motor — Mechanical</h6>
+          <table class="table table-sm mb-0" style="font-size:.8rem">
+            <thead class="table-light"><tr><th>Parameter</th><th>Required Value</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr><td>Frame size</td><td class="fw-semibold">IEC 90 (L/M)</td><td class="text-muted small">Fits within space envelope; IEC 100 acceptable if footprint permits</td></tr>
+              <tr><td>Mounting type</td><td class="fw-semibold">B5 flange</td><td class="text-muted small">Flange-mounted — no foot/base required</td></tr>
+              <tr><td>Flange disc (nominal)</td><td class="fw-semibold">Ø160 mm</td><td class="text-muted small">IEC 60034-7 nominal for frame 90</td></tr>
+              <tr class="table-info"><td>Bolt circle</td><td class="fw-semibold">Ø165 mm</td><td class="text-muted small">4 × M10 bolts — interfaces with gearbox input housing</td></tr>
+              <tr><td>Output shaft</td><td class="fw-semibold">Ø32k6 × 50 mm</td><td class="text-muted small">k6 = press fit; 50 mm engagement length</td></tr>
+              <tr><td>Frame material</td><td class="fw-semibold">Cast Iron (GJL/GG)</td><td class="text-muted small">Required for marine/offshore corrosion resistance and rigidity</td></tr>
+              <tr><td>Protection</td><td class="fw-semibold">IP66</td><td class="text-muted small">Dust-tight + powerful water jet — deck exposure</td></tr>
+              <tr><td>Cooling</td><td class="fw-semibold">IC410 / TENV</td><td class="text-muted small">Totally enclosed non-ventilated — no fan required, S3 duty</td></tr>
+              <tr><td>Insulation</td><td class="fw-semibold">Class H</td><td class="text-muted small">155°C limit; required for tropical ambient + self-heating</td></tr>
+              <tr><td>Efficiency</td><td class="fw-semibold">IE2 minimum</td><td class="text-muted small">IE3/IE4 preferred for offshore energy compliance</td></tr>
+              <tr><td>Standstill heater</td><td class="fw-semibold">24 VDC</td><td class="text-muted small">Prevents condensation when motor is idle at sea</td></tr>
+              <tr><td>Coating / corrosion</td><td class="fw-semibold">C5H / EN 12944-5</td><td class="text-muted small">Offshore marine environment class</td></tr>
+              <tr><td>Top color</td><td class="fw-semibold">RAL 7035</td><td class="text-muted small">PF crane standard — light grey</td></tr>
+              <tr><td>Ambient temperature</td><td class="fw-semibold">−20°C to +45°C</td><td class="text-muted small">North Sea / tropical combined envelope</td></tr>
+              <tr><td>Voltage</td><td class="fw-semibold">400/690V 50Hz</td><td class="text-muted small">Dual voltage; 400/480/690V for 60Hz vessels</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# Gearbox / drive side #}
+      <div class="col-md-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold mb-2"><i class="bi bi-gear-wide-connected me-1 text-success"></i>Gearbox &amp; Drive Interface</h6>
+          <table class="table table-sm mb-0" style="font-size:.8rem">
+            <thead class="table-light"><tr><th>Parameter</th><th>Required Value</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr class="table-info"><td>Gearbox input flange</td><td class="fw-semibold">IEC90 B5 · Ø165 mm</td><td class="text-muted small">Mates directly with motor output flange</td></tr>
+              <tr><td>Gearbox type</td><td class="fw-semibold">Bevel (right-angle)</td><td class="text-muted small">90° offset between motor and worm shafts</td></tr>
+              <tr><td>Gear ratio range</td><td class="fw-semibold">27–39 (4-pole)</td><td class="text-muted small">Must match catalogue ratio; e.g. 27.65 or 33.4</td></tr>
+              <tr><td>Min catalogue torque T2N</td><td class="fw-semibold">≥ {{ gb_soll_typ }} Nm</td><td class="text-muted small">Typical case; verify with load spectrum method in Calculator</td></tr>
+              <tr class="table-warning"><td>Gearbox output flange</td><td class="fw-semibold">Ø200 mm</td><td class="text-muted small">Motor-side gearbox output — connects to adapter flange</td></tr>
+              <tr class="table-warning"><td>Adapter flange</td><td class="fw-semibold">Ø200 mm → Ø165 mm</td><td class="text-muted small">Reduces gearbox output Ø200 to slewing drive input Ø165</td></tr>
+              <tr class="table-info"><td>Slewing drive interface</td><td class="fw-semibold">Ø165 mm</td><td class="text-muted small">PF slewing drive input flange — fixed constraint</td></tr>
+              <tr><td>Output shaft (gearbox)</td><td class="fw-semibold">Match worm input</td><td class="text-muted small">Couple to worm shaft via rigid or flexible coupling</td></tr>
+              <tr><td>Gearbox IP</td><td class="fw-semibold">IP66 minimum</td><td class="text-muted small">Same environment as motor</td></tr>
+              <tr><td>Gearbox oil</td><td class="fw-semibold">Synthetic ISO VG 220</td><td class="text-muted small">Low-temp pour point for −20°C start; consult gearbox supplier</td></tr>
+            </tbody>
+          </table>
+          <div class="mt-2 p-2 rounded" style="background:#fff3cd;font-size:.75rem">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+            <strong>Flange note:</strong> The <strong>Ø200 mm</strong> flange belongs to the gearbox output (motor side).
+            It is <em>not</em> the slewing drive interface. An adapter flange is required to reduce to
+            <strong>Ø165 mm</strong> before bolting to the slewing drive housing.
+          </div>
+        </div>
+      </div>
+
+    </div>{# /row #}
+  </div>
+</div>
+
+{% endblock %}

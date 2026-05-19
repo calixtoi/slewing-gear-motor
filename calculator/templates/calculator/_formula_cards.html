@@ -80,11 +80,15 @@
       <div class="formula-body">
         <p class="fw-bold mb-1"><span class="step-badge">4</span>Bevel gearbox ratio</p>
         <div class="formula-display">{% latexify f4 math_block=True %}</div>
-        <p class="formula-note mb-2">
+        <p class="formula-vars mb-1 mt-2">Inverse — output speed from ratio (datasheet gives i):</p>
+        <div class="formula-display">{% latexify f4_inv math_block=True %}</div>
+        <p class="formula-note mb-2 mt-2">
           <strong>Purpose:</strong> The bevel gearbox bridges the motor (high speed, ~1450 rpm) to the worm
           shaft input (lower speed, e.g. 43 rpm). This ratio is not a free choice — it is determined by
           dividing the motor's nameplate speed by the required worm input speed.
           The result must match an available gearbox ratio (e.g. 33.4:1).
+          When the datasheet gives the actual gear ratio <em>i</em> directly, use the inverse form
+          to compute the output speed.
         </p>
         <table class="table table-sm mb-0" style="font-size:.76rem">
           <thead class="table-light"><tr><th>Variable</th><th>Meaning</th><th>Typical value</th></tr></thead>

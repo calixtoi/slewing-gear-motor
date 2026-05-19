@@ -54,8 +54,15 @@ class DrivetrainForm(forms.Form):
     # ── Gearbox ──────────────────────────────────────────────────────────────
     gearbox_output_speed = forms.FloatField(
         label='Gearbox output speed n_gear_out (rpm)',
+        required=False,
         min_value=0.001,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 43.5'}),
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 43.5'}),
+    )
+    gear_ratio = forms.FloatField(
+        label='Gear ratio i (optional — computes n_gear_out = n_motor / i)',
+        required=False,
+        min_value=0.001,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 27.65'}),
     )
 
     # ── Supplier data (optional comparison) ─────────────────────────────────
@@ -90,6 +97,15 @@ class DrivetrainForm(forms.Form):
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
 
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('gearbox_output_speed') and not cleaned.get('gear_ratio'):
+            raise forms.ValidationError(
+                'Enter either the Gearbox output speed or the Gear ratio — at least one is required.',
+                code='gearbox_speed_missing',
+            )
+        return cleaned
+
 
 class MotorSpecsForm(forms.Form):
     """Motor physical specification fields for compliance checking and storage."""
@@ -99,8 +115,8 @@ class MotorSpecsForm(forms.Form):
         widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. Cast Iron / GJL-250'}),
     )
     spec_output_flange = forms.CharField(
-        label='Output Flange', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. Ø165 mm'}),
+        label='Motor Flange (IEC90 B5)', required=False,
+        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IEC90 B5 · Ø165 mm'}),
     )
     spec_shaft = forms.CharField(
         label='Shaft', required=False,

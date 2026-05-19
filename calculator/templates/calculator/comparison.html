@@ -129,9 +129,9 @@
           </td>
           {% endwith %}
 
-          {# Output Flange #}
+          {# Motor Flange #}
           {% with v=c.spec_output_flange %}
-          <td class="small {% if v %}{% if '160' in v %}table-success{% else %}table-danger{% endif %}{% endif %}">
+          <td class="small {% if v %}{% if '165' in v or '160' in v or 'b5' in v|lower or 'iec' in v|lower %}table-success{% else %}table-danger{% endif %}{% endif %}">
             {{ v|default:"—" }}
           </td>
           {% endwith %}

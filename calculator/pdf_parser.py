@@ -403,8 +403,8 @@ def _extract_clean_value(text: str, field: str) -> str:
 _COMPLIANCE_RULES = [
     ('spec_frame_material',    'Motor Frame Material', 'Cast Iron (GJL / GG)',
      [r"cast\s*iron", r"gjl", r"gg[-\s]?\d+", r"cast", r"iron"]),
-    ('spec_output_flange',     'Input Flange',         'Ø160 mm',
-     [r"160"]),
+    ('spec_output_flange',     'Motor Flange — IEC90 B5', 'IEC90 B5 · Ø165 mm bolt circle',
+     [r"165", r"iec\s*90", r"\bb5\b", r"160"]),
     ('spec_shaft',             'Output Shaft',         '32 × 50 mm',
      [r"32k6", r"32\s*[x×]\s*50", r"\b32\b"]),
     ('spec_cooling_method',    'Cooling Method',       'IC410 / TENV',
