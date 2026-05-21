@@ -2,7 +2,7 @@
 
 ## What this is
 Django 6.x web app for sizing slewing gear drivetrain motors on offshore cranes.
-Local dev server: `py manage.py runserver` → http://127.0.0.1:8000/
+Local dev server: `py manage.py runserver 127.0.0.1:8080` → http://127.0.0.1:8080/
 Repo: https://github.com/calixtoi/slewing-gear-motor
 Local clone: `C:\Users\CALIXTOI\Downloads\Github\slewing-gear-motor`
 Network mirror (read-only reference): `\\satsbgc13fil21\ba\Marine\BU_Marine_Wind\02_Design_Wind\02_PROJECTS\PF_range\PF Redesign\10_Steuerung\Slewing Gear Motor\django_updates\`

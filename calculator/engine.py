@@ -2,10 +2,10 @@
 
 
 SAFETY_FACTOR = 1.34  # Z-Systems sizing sheet constant
+DEFAULT_BEVEL_EFFICIENCY = 0.95
 
 
 def _check(value, required, label):
-    """Return a dict describing a single supplier vs. required comparison."""
     if value is None:
         return None
     margin = value / required
@@ -25,7 +25,6 @@ def _check(value, required, label):
 
 
 def _ratio_check(value, calculated, label):
-    """Return a dict for ratio comparison (exact match within ±2%)."""
     if value is None:
         return None
     deviation = abs(value - calculated) / calculated
@@ -47,7 +46,8 @@ def drivetrain_sizing(
     gearbox_output_speed,
     motor_rated_torque,
     starting_factor,
-    crane_torque_nom=None,        # optional — only needed for Steps 2 & 3
+    bevel_efficiency=DEFAULT_BEVEL_EFFICIENCY,
+    crane_torque_nom=None,
     supplier_motor_power_kw=None,
     supplier_motor_rated_torque=None,
     supplier_motor_starting_torque=None,
@@ -57,79 +57,62 @@ def drivetrain_sizing(
 ):
     r = {}
 
-    # Step 1 — Worm shaft torque (maximum)
-    # M2_Max = M_Max / (i_worm × η)
+    # ── Step 1 — Worm shaft torque (maximum) ─────────────────────────────────
+    # M2_Max = M_Max / (i_worm × η_worm)
     r['worm_input_torque_max'] = crane_torque_max / (worm_ratio * worm_efficiency)
 
-    # Step 2 — Worm shaft torque (nominal)  [skipped when M_Nenn not provided]
+    # ── Step 2 — Worm shaft torque (nominal) ─────────────────────────────────
+    # Path A (preferred): top-down from nominal crane torque
+    # Path B (fallback):  back-calculate from motor rated torque
+    #   M2_nom = M_n × i_worm × η_worm  →  nominal torque the motor continuously delivers
     if crane_torque_nom is not None:
         r['worm_input_torque_nom'] = crane_torque_nom / (worm_ratio * worm_efficiency)
+        r['step2_source'] = 'crane_torque_nom'
     else:
-        r['worm_input_torque_nom'] = None
+        r['worm_input_torque_nom'] = motor_rated_torque * worm_ratio * worm_efficiency
+        r['step2_source'] = 'motor_rated_torque'
 
-    # Step 3 — Required gearbox output torque  [skipped when M_Nenn not provided]
-    if r['worm_input_torque_nom'] is not None:
-        r['gearbox_required_torque'] = r['worm_input_torque_nom'] * SAFETY_FACTOR
-    else:
-        r['gearbox_required_torque'] = None
+    # ── Step 3 — Required gearbox output torque ───────────────────────────────
+    r['gearbox_required_torque'] = r['worm_input_torque_nom'] * SAFETY_FACTOR
 
-    # Step 4 — Bevel gearbox ratio
-    # i_bevel = n_motor / n_gear_out
+    # ── Step 4 — Bevel gearbox ratio ─────────────────────────────────────────
     r['n_gear_out'] = gearbox_output_speed
     r['bevel_ratio'] = motor_speed / gearbox_output_speed
 
-    # Step 5 — Slewing speed
-    # n_slew = n_gear_out / i_worm
+    # ── Step 5 — Slewing speed ────────────────────────────────────────────────
     r['slewing_speed_rpm'] = gearbox_output_speed / worm_ratio
 
-    # Step 6 — Motor torque required
-    # M_motor_req = M2_Max / i_bevel
-    r['motor_torque_required'] = r['worm_input_torque_max'] / r['bevel_ratio']
+    # ── Step 6 — Motor torque required (includes bevel gearbox efficiency) ────
+    # M_motor_req = M2_Max / (i_bevel × η_bevel)
+    r['bevel_efficiency'] = bevel_efficiency
+    r['motor_torque_required'] = r['worm_input_torque_max'] / (r['bevel_ratio'] * bevel_efficiency)
 
-    # Step 7 — Motor starting torque available
-    # M_start = M_n × (Ma/Mn)
+    # ── Step 7 — Motor starting torque available ──────────────────────────────
     r['motor_start_torque'] = motor_rated_torque * starting_factor
 
-    # Step 8 — Torque feasibility check
-    # S15 = M_start (available), S21 = M_motor_req (required)
-    # OK         : S15 > S21
-    # On the limit: S21 <= S15 + 2  (required is within 2 Nm of available)
-    # Too small  : S21 > S15 + 2
-    S15 = r['motor_start_torque']
-    S21 = r['motor_torque_required']
-    r['torque_margin'] = S15 / S21  # ratio kept for display
-    if S15 > S21:
-        r['torque_check'] = 'OK'
-    elif S21 <= S15 + 2:
-        r['torque_check'] = 'On the limit'
+    # ── Step 8 — Torque feasibility check ────────────────────────────────────
+    margin = r['motor_start_torque'] / r['motor_torque_required']
+    r['torque_margin'] = margin
+    if margin < 1.0:
+        r['torque_check'] = 'CRITICAL FAIL'
+    elif margin < 1.5:
+        r['torque_check'] = 'Low Margin'
     else:
-        r['torque_check'] = 'Too small'
+        r['torque_check'] = 'OK'
 
-    # Step 9 — Motor rated power (nameplate)
-    # P = (M_n × n_motor) / 9550
-    # M_n is the rated torque from the motor nameplate, not the back-calculated
-    # required torque. This gives the standard IEC power class of the motor.
+    # ── Step 9 — Motor rated power (nameplate) ────────────────────────────────
     r['motor_power_kw'] = (motor_rated_torque * motor_speed) / 9550
 
-    # ── Optional gearbox sizing (load spectrum method) ───────────────────────
-    # Requires crane_torque_nom (M_Nenn). Uses M2_Nenn and M2_Max already
-    # computed in Steps 1 and 2.
-    if crane_torque_nom is not None:
-        M2n = r['worm_input_torque_nom']   # M2_Nenn
-        M2a = r['worm_input_torque_max']   # M2_Max
-        # Step GB-3: load spectrum ratio  λ = M2_Nenn / M2_Max
-        lam = M2n / M2a
-        # Step GB-4: required gearbox nominal torque
-        M_soll = M2n + (M2a - M2n) * lam
-        r['gb_load_spectrum_ratio'] = round(lam, 4)
-        r['gb_sizing_torque'] = round(M_soll, 3)
-    else:
-        r['gb_load_spectrum_ratio'] = None
-        r['gb_sizing_torque'] = None
+    # ── Optional gearbox sizing (load spectrum method) ────────────────────────
+    M2n = r['worm_input_torque_nom']
+    M2a = r['worm_input_torque_max']
+    lam = M2n / M2a
+    M_soll = M2n + (M2a - M2n) * lam
+    r['gb_load_spectrum_ratio'] = round(lam, 4)
+    r['gb_sizing_torque'] = round(M_soll, 3)
 
-    # ── Supplier data checks ─────────────────────────────────────────────────
+    # ── Supplier data checks ──────────────────────────────────────────────────
     supplier_checks = []
-    checks_passed = None
 
     sc = _check(supplier_motor_starting_torque, r['motor_torque_required'],
                 'Motor starting torque Ma vs required')
@@ -146,11 +129,10 @@ def drivetrain_sizing(
     if sc:
         supplier_checks.append(sc)
 
-    if r['gearbox_required_torque'] is not None:
-        sc = _check(supplier_gearbox_rated_torque, r['gearbox_required_torque'],
-                    'Gearbox rated torque vs required')
-        if sc:
-            supplier_checks.append(sc)
+    sc = _check(supplier_gearbox_rated_torque, r['gearbox_required_torque'],
+                'Gearbox rated torque vs required')
+    if sc:
+        supplier_checks.append(sc)
 
     sc = _ratio_check(supplier_bevel_ratio, r['bevel_ratio'],
                       'Bevel ratio vs calculated')
@@ -163,6 +145,7 @@ def drivetrain_sizing(
         supplier_checks.append(sc)
 
     r['supplier_checks'] = supplier_checks
+    checks_passed = None
     if supplier_checks:
         all_statuses = [c['status'] for c in supplier_checks]
         if all(s == 'OK' for s in all_statuses):
@@ -173,7 +156,7 @@ def drivetrain_sizing(
             checks_passed = 'MARGINAL'
     r['supplier_overall'] = checks_passed
 
-    # Round all numeric results for display (guard None for optional steps 2 & 3)
+    # Round numeric results
     for key in ('worm_input_torque_max', 'worm_input_torque_nom',
                 'gearbox_required_torque', 'n_gear_out', 'bevel_ratio',
                 'slewing_speed_rpm', 'motor_torque_required',

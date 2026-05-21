@@ -25,6 +25,7 @@ class MotorCalculation(models.Model):
     motor_rated_torque = models.FloatField()
     starting_factor = models.FloatField()
     gearbox_output_speed = models.FloatField()
+    bevel_efficiency = models.FloatField(default=0.95)
 
     # ── Optional supplier comparison inputs ───────────────────────────────────
     supplier_motor_power_kw = models.FloatField(null=True, blank=True)
@@ -53,7 +54,7 @@ class MotorCalculation(models.Model):
     spec_voltage          = models.CharField(max_length=100, blank=True, default='')
 
     # ── Key results (stored for list display; detail re-runs engine) ──────────
-    torque_check = models.CharField(max_length=20)
+    torque_check = models.CharField(max_length=30)
     torque_margin = models.FloatField()
     motor_power_kw = models.FloatField()
 
@@ -74,6 +75,7 @@ class MotorCalculation(models.Model):
             gearbox_output_speed=self.gearbox_output_speed,
             motor_rated_torque=self.motor_rated_torque,
             starting_factor=self.starting_factor,
+            bevel_efficiency=self.bevel_efficiency,
             supplier_motor_power_kw=self.supplier_motor_power_kw,
             supplier_motor_rated_torque=self.supplier_motor_rated_torque,
             supplier_motor_starting_torque=self.supplier_motor_starting_torque,

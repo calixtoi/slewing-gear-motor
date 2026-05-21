@@ -51,6 +51,13 @@ class DrivetrainForm(forms.Form):
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 3.40'}),
     )
 
+    bevel_efficiency = forms.FloatField(
+        label='Bevel gearbox efficiency η_bevel (0–1)',
+        min_value=0.01, max_value=1.0,
+        initial=0.95,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 0.95'}),
+    )
+
     # ── Gearbox ──────────────────────────────────────────────────────────────
     gearbox_output_speed = forms.FloatField(
         label='Gearbox output speed n_gear_out (rpm)',

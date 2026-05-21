@@ -20,14 +20,15 @@ FORMULAS = {
     'f4':     r'i_{\text{bevel}} = \dfrac{n_{\text{motor}}}{n_{\text{gear,out}}}',
     'f4_inv': r'n_{\text{gear,out}} = \dfrac{n_{\text{motor}}}{i_{\text{bevel}}}',
     'f5':  r'n_{\text{slew}} = \dfrac{n_{\text{gear,out}}}{i_{\text{worm}}}',
-    'f6':  r'M_{\text{motor,req}} = \dfrac{M_{2,\max}}{i_{\text{bevel}}}',
+    'f2_inv': r'M_{2,\text{nom}} = M_n \cdot i_{\text{worm}} \cdot \eta_{\text{worm}} \quad \text{(back-calc from motor)}',
+    'f6':  r'M_{\text{motor,req}} = \dfrac{M_{2,\max}}{i_{\text{bevel}} \cdot \eta_{\text{bevel}}}',
     'f7':  r'M_{\text{start}} = M_n \cdot k_{\text{start}}, \qquad k_{\text{start}} = \dfrac{M_a}{M_n}',
     'f8':  r'\text{margin} = \dfrac{M_{\text{start}}}{M_{\text{motor,req}}}',
     'f8c': (
         r'\begin{cases}'
-        r'M_{\text{start}} > M_{\text{motor,req}} & \Rightarrow \textbf{OK} \\'
-        r'M_{\text{motor,req}} \leq M_{\text{start}} + 2\,\text{Nm} & \Rightarrow \textbf{On\;the\;limit} \\'
-        r'M_{\text{motor,req}} > M_{\text{start}} + 2\,\text{Nm} & \Rightarrow \textbf{Too\;small}'
+        r'\text{margin} \geq 1.5 & \Rightarrow \textbf{OK} \\'
+        r'1.0 \leq \text{margin} < 1.5 & \Rightarrow \textbf{Low\;Margin} \\'
+        r'\text{margin} < 1.0 & \Rightarrow \textbf{CRITICAL\;FAIL\;—\;Motor\;Will\;Stall}'
         r'\end{cases}'
     ),
     'f9':     r'P_{\text{rated}}\,[\text{kW}] = \dfrac{M_n\,[\text{Nm}] \cdot n_{\text{motor}}\,[\text{rpm}]}{9550}',
@@ -121,6 +122,7 @@ def index(request):
                 gearbox_output_speed=n_gear_out_eff,
                 motor_rated_torque=d['motor_rated_torque'],
                 starting_factor=d['starting_factor'],
+                bevel_efficiency=d['bevel_efficiency'],
                 supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
                 supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
                 supplier_motor_starting_torque=d.get('supplier_motor_starting_torque'),
@@ -285,6 +287,7 @@ def save_calculation(request):
             gearbox_output_speed=n_gear_out_eff,
             motor_rated_torque=d['motor_rated_torque'],
             starting_factor=d['starting_factor'],
+            bevel_efficiency=d['bevel_efficiency'],
             supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
             supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
             supplier_motor_starting_torque=d.get('supplier_motor_starting_torque'),
@@ -316,6 +319,7 @@ def save_calculation(request):
             motor_speed=d['motor_speed'],
             motor_rated_torque=d['motor_rated_torque'],
             starting_factor=d['starting_factor'],
+            bevel_efficiency=d['bevel_efficiency'],
             gearbox_output_speed=n_gear_out_eff,
             supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
             supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
@@ -344,6 +348,7 @@ def save_calculation(request):
             gearbox_output_speed=_effective_gearbox_speed(d),
             motor_rated_torque=d['motor_rated_torque'],
             starting_factor=d['starting_factor'],
+            bevel_efficiency=d['bevel_efficiency'],
         )
 
     compliance = None
@@ -413,11 +418,13 @@ def requirements(request):
     def next_iec(p):
         return next((x for x in IEC_POWERS if x >= p), None)
 
+    ETA_BEVEL = 0.95  # bevel gearbox efficiency applied in Step 6
+
     def _row(eta, n_slew, ma_mn):
         ng = round(n_slew * I_WORM, 2)
         M2 = M_MAX / (I_WORM * eta)
         ib = N_MOTOR / ng
-        Mr = M2 / ib   # = M_MAX * n_slew / (eta * N_MOTOR)
+        Mr = M2 / (ib * ETA_BEVEL)   # Step 6: includes bevel efficiency
         Mn = Mr / ma_mn
         P  = Mn * N_MOTOR / 9550
         M_start = Mn * ma_mn
@@ -452,7 +459,7 @@ def requirements(request):
 
     context = {
         'M_MAX': M_MAX, 'I_WORM': I_WORM, 'N_MOTOR': N_MOTOR, 'N_MOTOR_6P': N_MOTOR_6P,
-        'SF': SAFETY_FACTOR,
+        'SF': SAFETY_FACTOR, 'ETA_BEVEL': ETA_BEVEL,
         'worst': worst, 'best': best, 'typ': typ,
         'matrix': matrix,
         'gb_soll_typ': gb_soll_typ,
