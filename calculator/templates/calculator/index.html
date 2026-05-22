@@ -16,6 +16,30 @@
           <input type="hidden" name="action" value="calculate">
           <input type="hidden" name="datasheet_data" value="{{ datasheet_json }}">
 
+          {# ── Crane Configuration Preset ── #}
+          <div class="mb-3 p-2 rounded" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15)">
+            <div class="small fw-semibold text-uppercase text-muted mb-2" style="font-size:.68rem;letter-spacing:.07em">
+              <i class="bi bi-bookmarks-fill me-1"></i>Crane Configuration
+            </div>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="crane_preset" id="preset_custom" value="" checked autocomplete="off">
+              <label class="btn btn-outline-secondary btn-sm" for="preset_custom">Custom</label>
+              <input type="radio" class="btn-check" name="crane_preset" id="preset_standard" value="standard_pf" autocomplete="off">
+              <label class="btn btn-outline-primary btn-sm" for="preset_standard"
+                     title="M_Max = 41 190 Nm · M_Nom = 15 360 Nm · i_worm = 121 · η = 0.40">
+                PF Standard
+              </label>
+              <input type="radio" class="btn-check" name="crane_preset" id="preset_xxl" value="pf_xxl" autocomplete="off">
+              <label class="btn btn-outline-warning btn-sm" for="preset_xxl"
+                     title="M_Max = 61 000 Nm · i_worm = 150 · η = 0.40">
+                PF-XXL
+              </label>
+            </div>
+            <div id="presetNote" class="mt-1" style="display:none;font-size:.7rem;color:#6ea8fe">
+              <i class="bi bi-check2-circle me-1"></i>Preset applied — all fields remain editable.
+            </div>
+          </div>
+
           {# ── Datasheet status / import button ── #}
           {% if datasheet %}
           <div class="d-flex align-items-center gap-2 mb-3 px-2 py-1 rounded"
@@ -41,12 +65,19 @@
           <p class="section-label"><i class="bi bi-arrow-down-circle me-1"></i>Crane Load</p>
           <div class="row g-2">
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.crane_torque_max.label }}</label>
+              <label class="form-label mb-1 small">
+                Maximum Torque
+                <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+              </label>
               {{ form.crane_torque_max }}
               {% if form.crane_torque_max.errors %}<div class="text-danger small">{{ form.crane_torque_max.errors|join:", " }}</div>{% endif %}
             </div>
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.crane_torque_nom.label }}</label>
+              <label class="form-label mb-1 small">
+                Nominal Torque
+                <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+                <span class="badge bg-secondary ms-1" style="font-size:.54rem;font-weight:400;vertical-align:middle">optional</span>
+              </label>
               {{ form.crane_torque_nom }}
             </div>
           </div>
@@ -54,11 +85,17 @@
           <p class="section-label"><i class="bi bi-arrows-angle-contract me-1"></i>Worm Gear</p>
           <div class="row g-2">
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.worm_ratio.label }}</label>
+              <label class="form-label mb-1 small">
+                Gear Ratio
+                <span class="text-muted ms-1" style="font-size:.72rem">i<sub>worm</sub></span>
+              </label>
               {{ form.worm_ratio }}
             </div>
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.worm_efficiency.label }}</label>
+              <label class="form-label mb-1 small">
+                Efficiency
+                <span class="text-muted ms-1" style="font-size:.72rem">&eta;&thinsp;(0–1)</span>
+              </label>
               {{ form.worm_efficiency }}
             </div>
           </div>
@@ -66,15 +103,24 @@
           <p class="section-label"><i class="bi bi-lightning-charge me-1"></i>Motor</p>
           <div class="row g-2">
             <div class="col-4">
-              <label class="form-label mb-1">{{ form.motor_speed.label }}</label>
+              <label class="form-label mb-1 small">
+                Speed
+                <span class="text-muted ms-1" style="font-size:.72rem">[rpm]</span>
+              </label>
               {{ form.motor_speed }}
             </div>
             <div class="col-4">
-              <label class="form-label mb-1">{{ form.motor_rated_torque.label }}</label>
+              <label class="form-label mb-1 small">
+                Rated Torque
+                <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+              </label>
               {{ form.motor_rated_torque }}
             </div>
             <div class="col-4">
-              <label class="form-label mb-1">{{ form.starting_factor.label }}</label>
+              <label class="form-label mb-1 small">
+                Starting Factor
+                <span class="text-muted ms-1" style="font-size:.72rem">M<sub>a</sub>/M<sub>n</sub></span>
+              </label>
               {{ form.starting_factor }}
             </div>
           </div>
@@ -82,23 +128,43 @@
           <p class="section-label"><i class="bi bi-gear me-1"></i>Bevel Gearbox</p>
           <div class="row g-2">
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.gearbox_output_speed.label }}</label>
+              <label class="form-label mb-1 small">
+                Output Speed
+                <span class="text-muted ms-1" style="font-size:.72rem">[rpm]</span>
+                <span class="badge bg-secondary ms-1" style="font-size:.54rem;font-weight:400;vertical-align:middle">optional</span>
+              </label>
               {{ form.gearbox_output_speed }}
             </div>
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.gear_ratio.label }}</label>
+              <label class="form-label mb-1 small">
+                Gear Ratio
+                <span class="text-muted ms-1" style="font-size:.72rem">i<sub>bevel</sub></span>
+                <span class="badge bg-secondary ms-1" style="font-size:.54rem;font-weight:400;vertical-align:middle">optional</span>
+              </label>
               {{ form.gear_ratio }}
             </div>
             <div class="col-6">
-              <label class="form-label mb-1">{{ form.bevel_efficiency.label }}</label>
+              <label class="form-label mb-1 small">
+                Efficiency
+                <span class="text-muted ms-1" style="font-size:.72rem">&eta;<sub>bevel</sub>&thinsp;(0–1)</span>
+              </label>
               {{ form.bevel_efficiency }}
             </div>
           </div>
           <div class="row g-2 mt-0">
             <div class="col-12">
-              <small class="text-muted">Provide either <strong>n_gear_out</strong> or <strong>i</strong>. η_bevel = 0.95 is the standard value for helical bevel gears.</small>
+              <small class="text-muted" style="font-size:.72rem">
+                <i class="bi bi-info-circle me-1"></i>
+                Provide <strong>Output Speed</strong> or <strong>Gear Ratio</strong> — at least one is required.
+                &eta;<sub>bevel</sub> = 0.95 is typical for helical bevel gears.
+              </small>
             </div>
           </div>
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger small mt-2 py-1 px-2">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+          {% endif %}
 
           {# Motor Specifications — compliance check fields #}
           <div class="mt-3">
@@ -216,27 +282,35 @@
               <div class="mt-2 p-2 bg-light rounded border">
                 <div class="row g-2">
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_motor_power_kw.label }}</label>
+                    <label class="form-label mb-1 small">
+                      Motor Power <span class="text-muted ms-1" style="font-size:.72rem">[kW]</span>
+                    </label>
                     {{ form.supplier_motor_power_kw }}
                   </div>
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_motor_rated_torque.label }}</label>
+                    <label class="form-label mb-1 small">
+                      Rated Torque <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+                    </label>
                     {{ form.supplier_motor_rated_torque }}
                   </div>
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_motor_starting_torque.label }}</label>
+                    <label class="form-label mb-1 small">
+                      Starting Torque <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+                    </label>
                     {{ form.supplier_motor_starting_torque }}
                   </div>
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_gearbox_rated_torque.label }}</label>
+                    <label class="form-label mb-1 small">
+                      Gearbox Rated Torque <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+                    </label>
                     {{ form.supplier_gearbox_rated_torque }}
                   </div>
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_bevel_ratio.label }}</label>
+                    <label class="form-label mb-1 small">Bevel Gear Ratio</label>
                     {{ form.supplier_bevel_ratio }}
                   </div>
                   <div class="col-6">
-                    <label class="form-label mb-1">{{ form.supplier_worm_ratio.label }}</label>
+                    <label class="form-label mb-1 small">Worm Gear Ratio</label>
                     {{ form.supplier_worm_ratio }}
                   </div>
                 </div>
@@ -764,4 +838,37 @@
   </div>
 </div>
 
+<script>
+(function () {
+  var PRESETS = {
+    standard_pf: {
+      crane_torque_max: 41190,
+      crane_torque_nom: 15360,
+      worm_ratio: 121,
+      worm_efficiency: 0.40
+    },
+    pf_xxl: {
+      crane_torque_max: 61000,
+      crane_torque_nom: '',
+      worm_ratio: 150,
+      worm_efficiency: 0.40
+    }
+  };
+  var note = document.getElementById('presetNote');
+  document.querySelectorAll('input[name="crane_preset"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      var preset = PRESETS[this.value];
+      if (!preset) {
+        if (note) note.style.display = 'none';
+        return;
+      }
+      Object.keys(preset).forEach(function (name) {
+        var field = document.querySelector('[name="' + name + '"]');
+        if (field) field.value = preset[name];
+      });
+      if (note) note.style.display = 'block';
+    });
+  });
+})();
+</script>
 {% endblock %}

@@ -11,48 +11,48 @@ TEXT_WIDGET_OPT  = {'class': 'form-control form-control-sm', 'placeholder': 'opt
 class DrivetrainForm(forms.Form):
     # ── Crane load ──────────────────────────────────────────────────────────
     crane_torque_max = forms.FloatField(
-        label='Max torque M_Max (Nm)',
+        label='Maximum Torque',
         min_value=0,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 62000'}),
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 41 190'}),
     )
     crane_torque_nom = forms.FloatField(
-        label='Nominal torque M_Nenn (Nm) — optional',
+        label='Nominal Torque',
         required=False,
         min_value=0,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 23120 (for gearbox sizing)'}),
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 15 360 (enables gearbox sizing)'}),
     )
 
     # ── Worm gear ────────────────────────────────────────────────────────────
     worm_ratio = forms.FloatField(
-        label='Worm ratio i_worm',
+        label='Worm Gear Ratio',
         min_value=1,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 150'}),
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 121'}),
     )
     worm_efficiency = forms.FloatField(
-        label='Worm efficiency η (0–1)',
+        label='Worm Gear Efficiency',
         min_value=0.01, max_value=1.0,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 0.40'}),
     )
 
     # ── Motor ────────────────────────────────────────────────────────────────
     motor_speed = forms.FloatField(
-        label='Motor speed n_motor (rpm)',
+        label='Motor Speed',
         min_value=1,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 1454'}),
     )
     motor_rated_torque = forms.FloatField(
-        label='Motor rated torque M_n (Nm)',
+        label='Motor Rated Torque',
         min_value=0,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 12'}),
     )
     starting_factor = forms.FloatField(
-        label='Starting factor Ma/Mn',
+        label='Starting Factor',
         min_value=0,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 3.40'}),
     )
 
     bevel_efficiency = forms.FloatField(
-        label='Bevel gearbox efficiency η_bevel (0–1)',
+        label='Bevel Gearbox Efficiency',
         min_value=0.01, max_value=1.0,
         initial=0.95,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 0.95'}),
@@ -60,13 +60,13 @@ class DrivetrainForm(forms.Form):
 
     # ── Gearbox ──────────────────────────────────────────────────────────────
     gearbox_output_speed = forms.FloatField(
-        label='Gearbox output speed n_gear_out (rpm)',
+        label='Gearbox Output Speed',
         required=False,
         min_value=0.001,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 43.5'}),
     )
     gear_ratio = forms.FloatField(
-        label='Gear ratio i (optional — computes n_gear_out = n_motor / i)',
+        label='Bevel Gear Ratio',
         required=False,
         min_value=0.001,
         widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 27.65'}),
@@ -74,32 +74,32 @@ class DrivetrainForm(forms.Form):
 
     # ── Supplier data (optional comparison) ─────────────────────────────────
     supplier_motor_power_kw = forms.FloatField(
-        label='Supplier motor power (kW)',
+        label='Motor Power',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
     supplier_motor_rated_torque = forms.FloatField(
-        label='Supplier motor rated torque M_n (Nm)',
+        label='Motor Rated Torque',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
     supplier_motor_starting_torque = forms.FloatField(
-        label='Supplier motor starting torque Ma (Nm)',
+        label='Motor Starting Torque',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
     supplier_gearbox_rated_torque = forms.FloatField(
-        label='Supplier gearbox rated torque (Nm)',
+        label='Gearbox Rated Torque',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
     supplier_bevel_ratio = forms.FloatField(
-        label='Supplier bevel gearbox ratio',
+        label='Bevel Gear Ratio',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
     supplier_worm_ratio = forms.FloatField(
-        label='Supplier worm ratio',
+        label='Worm Gear Ratio',
         required=False, min_value=0,
         widget=forms.NumberInput(attrs=FLOAT_WIDGET_OPT),
     )
