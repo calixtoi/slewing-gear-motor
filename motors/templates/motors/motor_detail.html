@@ -1,0 +1,309 @@
+{% extends "motors/base.html" %}
+
+{% block title %}{{ motor.model_number }} - Supplier Motor Details{% endblock %}
+
+{% block extra_head %}
+<style>
+    .spec-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+    .spec-value {
+        font-size: 1.1rem;
+        color: #212529;
+        margin-top: 3px;
+    }
+    .compliance-pass {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    .compliance-fail {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ motor.model_number }}</h1>
+            <p class="text-muted lead">{{ motor.model_name }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'motors:pdf_export' motor.model_number %}" class="btn btn-primary me-2">
+                <i class="bi bi-download"></i> Download PDF
+            </a>
+            <a href="{% url 'motors:list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Compliance Status -->
+    {% if motor.compliant %}
+    <div class="compliance-pass">
+        <i class="bi bi-check-circle"></i> <strong>Compliant</strong> - Meets all PF crane requirements
+    </div>
+    {% else %}
+    <div class="compliance-fail">
+        <i class="bi bi-x-circle"></i> <strong>Non-Compliant</strong> - Does not meet all requirements
+        {% if motor.compliance_notes %}
+        <p class="mt-2 mb-0">{{ motor.compliance_notes }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Motor Specifications -->
+        <div class="col-lg-6">
+            <div class="section-header">
+                <i class="bi bi-lightning-charge"></i> Motor Specifications
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Power Rating</div>
+                <div class="spec-value">{{ motor.motor_power }} kW (S3-15%)</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Rated Speed</div>
+                <div class="spec-value">{{ motor.motor_speed }} rpm</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Rated Torque</div>
+                <div class="spec-value">{{ motor.motor_torque }} Nm</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Starting Torque (Max)</div>
+                <div class="spec-value">{{ motor.motor_starting_torque }} Nm</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Starting Factor (Ma/Mn)</div>
+                <div class="spec-value">{{ motor.motor_starting_factor|floatformat:2 }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Voltage 50Hz</div>
+                <div class="spec-value">{{ motor.motor_voltage_50hz }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Voltage 60Hz</div>
+                <div class="spec-value">{{ motor.motor_voltage_60hz }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Frame Size</div>
+                <div class="spec-value">{{ motor.motor_frame }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Flange Type</div>
+                <div class="spec-value">{{ motor.motor_flange }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Output Shaft</div>
+                <div class="spec-value">{{ motor.motor_shaft }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Cooling Method</div>
+                <div class="spec-value">{{ motor.motor_cooling }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">IP Rating</div>
+                <div class="spec-value">{{ motor.motor_ip_rating }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Insulation Class</div>
+                <div class="spec-value">{{ motor.motor_insulation_class }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Efficiency Class</div>
+                <div class="spec-value">{{ motor.motor_efficiency_class }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Ambient Temperature Range</div>
+                <div class="spec-value">{{ motor.motor_ambient_temp_min }}°C to {{ motor.motor_ambient_temp_max }}°C</div>
+            </div>
+
+            {% if motor.motor_heater %}
+            <div class="spec-card">
+                <div class="spec-label">Standstill Heater</div>
+                <div class="spec-value">{{ motor.motor_heater }}</div>
+            </div>
+            {% endif %}
+
+            {% if motor.motor_coating %}
+            <div class="spec-card">
+                <div class="spec-label">Coating</div>
+                <div class="spec-value">{{ motor.motor_coating }}</div>
+            </div>
+            {% endif %}
+
+            {% if motor.motor_color %}
+            <div class="spec-card">
+                <div class="spec-label">Color</div>
+                <div class="spec-value">{{ motor.motor_color }}</div>
+            </div>
+            {% endif %}
+
+            {% if motor.motor_power_factor %}
+            <div class="spec-card">
+                <div class="spec-label">Power Factor (cosφ)</div>
+                <div class="spec-value">{{ motor.motor_power_factor|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Gearbox Specifications -->
+        <div class="col-lg-6">
+            <div class="section-header">
+                <i class="bi bi-gear"></i> Gearbox Specifications
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Gearbox Model</div>
+                <div class="spec-value">{{ motor.gearbox_model }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Gear Ratio</div>
+                <div class="spec-value">{{ motor.gearbox_ratio|floatformat:2 }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Output Speed</div>
+                <div class="spec-value">{{ motor.gearbox_output_speed }} rpm</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Output Torque</div>
+                <div class="spec-value">{{ motor.gearbox_output_torque }} Nm</div>
+            </div>
+
+            {% if motor.gearbox_nominal_torque %}
+            <div class="spec-card">
+                <div class="spec-label">Nominal Torque (Rated)</div>
+                <div class="spec-value">{{ motor.gearbox_nominal_torque }} Nm</div>
+            </div>
+            {% endif %}
+
+            {% if motor.gearbox_starting_torque_max %}
+            <div class="spec-card">
+                <div class="spec-label">Starting Torque (Max)</div>
+                <div class="spec-value">{{ motor.gearbox_starting_torque_max }} Nm</div>
+            </div>
+            {% endif %}
+
+            {% if motor.gearbox_tip_torque_max %}
+            <div class="spec-card">
+                <div class="spec-label">Tip-Over Torque (Max)</div>
+                <div class="spec-value">{{ motor.gearbox_tip_torque_max }} Nm</div>
+            </div>
+            {% endif %}
+
+            {% if motor.gearbox_efficiency_factor %}
+            <div class="spec-card">
+                <div class="spec-label">Efficiency Factor (CG)</div>
+                <div class="spec-value">{{ motor.gearbox_efficiency_factor|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+
+            <div class="spec-card">
+                <div class="spec-label">Output Flange</div>
+                <div class="spec-value">{{ motor.gearbox_output_flange }}</div>
+            </div>
+
+            <div class="spec-card">
+                <div class="spec-label">Output Shaft</div>
+                <div class="spec-value">{{ motor.gearbox_output_shaft }}</div>
+            </div>
+
+            {% if motor.gearbox_oil_capacity %}
+            <div class="spec-card">
+                <div class="spec-label">Oil Capacity</div>
+                <div class="spec-value">{{ motor.gearbox_oil_capacity }} liters</div>
+            </div>
+            {% endif %}
+
+            {% if motor.gearbox_oil_type %}
+            <div class="spec-card">
+                <div class="spec-label">Oil Type</div>
+                <div class="spec-value">{{ motor.gearbox_oil_type }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Performance Summary -->
+            <div class="section-header mt-4">
+                <i class="bi bi-graph-up"></i> Performance Summary
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <tr>
+                        <td class="fw-bold">Input Speed</td>
+                        <td class="text-end">{{ motor.motor_speed }} rpm</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Input Torque</td>
+                        <td class="text-end">{{ motor.motor_torque }} Nm</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Output Speed</td>
+                        <td class="text-end">{{ motor.gearbox_output_speed }} rpm</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Output Torque</td>
+                        <td class="text-end">{{ motor.gearbox_output_torque }} Nm</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td class="fw-bold">Speed Reduction</td>
+                        <td class="text-end">{{ motor.gearbox_ratio|floatformat:2 }}:1</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td class="fw-bold">Torque Multiplication</td>
+                        <td class="text-end">{{ motor.gearbox_ratio|floatformat:2 }}x</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="row mt-5 pt-4 border-top">
+        <div class="col-md-6">
+            <small class="text-muted">
+                Created: {{ motor.created_at|date:"Y-m-d H:i" }}<br>
+                Last Updated: {{ motor.updated_at|date:"Y-m-d H:i" }}
+            </small>
+        </div>
+        <div class="col-md-6 text-end">
+            {% if motor.pdf_url %}
+            <a href="{{ motor.pdf_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-pdf"></i> View Datasheet
+            </a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

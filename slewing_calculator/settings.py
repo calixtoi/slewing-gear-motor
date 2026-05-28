@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'latexify',
     'calculator',
+    'motors',
 ]
 
 MIDDLEWARE = [
