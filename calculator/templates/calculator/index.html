@@ -62,6 +62,87 @@
           </div>
           {% endif %}
 
+          {# ── New Interface: Motor & Gearbox Specs ── #}
+          <p class="section-label"><i class="bi bi-gear me-1"></i>Motor & Gearbox Specs</p>
+
+          <div class="mb-3">
+            <label class="form-label mb-2 small">
+              Crane Type
+            </label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="crane_type" id="id_crane_type_0" value="standard_pf" checked autocomplete="off">
+              <label class="btn btn-outline-primary btn-sm" for="id_crane_type_0">Standard PF Crane</label>
+              <input type="radio" class="btn-check" name="crane_type" id="id_crane_type_1" value="pf_xxl" autocomplete="off">
+              <label class="btn btn-outline-warning btn-sm" for="id_crane_type_1">PF-XXL Crane</label>
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Motor Power
+                <span class="text-muted ms-1" style="font-size:.72rem">[kW]</span>
+              </label>
+              {{ form.motor_power }}
+              {% if form.motor_power.errors %}<div class="text-danger small">{{ form.motor_power.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Motor Speed
+                <span class="text-muted ms-1" style="font-size:.72rem">[RPM]</span>
+              </label>
+              {{ form.motor_speed_new }}
+              {% if form.motor_speed_new.errors %}<div class="text-danger small">{{ form.motor_speed_new.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Output Torque
+                <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+              </label>
+              {{ form.supplier_output_torque }}
+              {% if form.supplier_output_torque.errors %}<div class="text-danger small">{{ form.supplier_output_torque.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Starting Torque
+                <span class="text-muted ms-1" style="font-size:.72rem">[Nm]</span>
+              </label>
+              {{ form.supplier_starting_torque }}
+              {% if form.supplier_starting_torque.errors %}<div class="text-danger small">{{ form.supplier_starting_torque.errors|join:", " }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Output Speed
+                <span class="text-muted ms-1" style="font-size:.72rem">[RPM]</span>
+                <span class="badge bg-secondary ms-1" style="font-size:.54rem;font-weight:400;vertical-align:middle">or ratio</span>
+              </label>
+              {{ form.gearbox_output_speed }}
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Gearbox Ratio
+                <span class="text-muted ms-1" style="font-size:.72rem">[i_gb]</span>
+              </label>
+              {{ form.gear_ratio }}
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label mb-1 small">
+                Ma/Mn Factor
+                <span class="text-muted ms-1" style="font-size:.72rem">[optional]</span>
+              </label>
+              {{ form.mk_mn_ratio }}
+            </div>
+          </div>
+
           <p class="section-label"><i class="bi bi-arrow-down-circle me-1"></i>Crane Load</p>
           <div class="row g-2">
             <div class="col-6">

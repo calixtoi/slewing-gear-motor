@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     'latexify',
     'calculator',
     'motors',
+    'torque_curve',
 ]
 
 MIDDLEWARE = [

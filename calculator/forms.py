@@ -9,11 +9,75 @@ TEXT_WIDGET_OPT  = {'class': 'form-control form-control-sm', 'placeholder': 'opt
 
 
 class DrivetrainForm(forms.Form):
-    # ── Crane load ──────────────────────────────────────────────────────────
-    crane_torque_max = forms.FloatField(
-        label='Maximum Torque',
+    # ── Crane type (new interface) ───────────────────────────────────────────
+    crane_type = forms.ChoiceField(
+        label='Crane Type',
+        choices=[
+            ('standard_pf', 'Standard PF Crane'),
+            ('pf_xxl', 'PF-XXL Crane'),
+        ],
+        required=False,
+        initial='standard_pf',
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+    )
+
+    # ── Motor specs (new interface) ───────────────────────────────────────────
+    motor_power = forms.FloatField(
+        label='Motor Power (kW)',
+        required=False,
+        min_value=0.01,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 0.75'}),
+    )
+    motor_speed_new = forms.FloatField(
+        label='Motor Speed (RPM)',
+        required=False,
+        min_value=1,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 1410'}),
+    )
+
+    # ── Gearbox output specs (new interface) ───────────────────────────────────
+    supplier_output_torque = forms.FloatField(
+        label='Geared Motor Output Torque (Nm)',
+        required=False,
         min_value=0,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET, 'placeholder': 'e.g. 41 190'}),
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 141'}),
+    )
+    supplier_starting_torque = forms.FloatField(
+        label='Geared Motor Starting Torque (Nm)',
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 295'}),
+    )
+
+    # ── Gearbox ratio ────────────────────────────────────────────────────────
+    gearbox_output_speed = forms.FloatField(
+        label='Gearbox Output Speed (RPM)',
+        required=False,
+        min_value=0.001,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 51'}),
+    )
+    gear_ratio = forms.FloatField(
+        label='Gearbox Ratio (i_gb)',
+        required=False,
+        min_value=0.001,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 27.82'}),
+    )
+
+    # ── Starting factor ──────────────────────────────────────────────────────
+    mk_mn_ratio = forms.FloatField(
+        label='Ma/Mn Starting Factor',
+        required=False,
+        min_value=0,
+        initial=3.40,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 3.40'}),
+    )
+
+    # ── Legacy fields (for backward compatibility) ───────────────────────────
+    crane_torque_max = forms.FloatField(
+        label='Maximum Torque (Nm)',
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 41 190'}),
     )
     crane_torque_nom = forms.FloatField(
         label='Nominal Torque',
@@ -108,79 +172,40 @@ class DrivetrainForm(forms.Form):
         cleaned = super().clean()
         if not cleaned.get('gearbox_output_speed') and not cleaned.get('gear_ratio'):
             raise forms.ValidationError(
-                'Enter either the Gearbox output speed or the Gear ratio — at least one is required.',
+                'Enter either the Gearbox output speed (RPM) or the Gearbox ratio (i_gb) — at least one is required.',
                 code='gearbox_speed_missing',
             )
         return cleaned
 
 
 class MotorSpecsForm(forms.Form):
-    """Motor physical specification fields for compliance checking and storage."""
-
-    spec_frame_material = forms.CharField(
-        label='Frame Material', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. Cast Iron / GJL-250'}),
-    )
-    spec_output_flange = forms.CharField(
-        label='Motor Flange (IEC90 B5)', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IEC90 B5 · Ø165 mm'}),
-    )
-    spec_shaft = forms.CharField(
-        label='Shaft', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. 32 × 50'}),
-    )
-    spec_cooling_method = forms.CharField(
-        label='Cooling Method', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IC410 TENV'}),
-    )
-    spec_ip_rating = forms.CharField(
-        label='IP Rating', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IP66'}),
-    )
-    spec_ambient_temp = forms.CharField(
-        label='Ambient Temperature', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. -20°C to +45°C'}),
-    )
-    spec_coating = forms.CharField(
-        label='Coating Class', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. C5H / EN 12944-5'}),
-    )
-    spec_top_color = forms.CharField(
-        label='Top Color', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. RAL7035'}),
-    )
-    spec_heater = forms.CharField(
-        label='Standstill Heater', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. 24VDC'}),
-    )
-    spec_insulation_class = forms.CharField(
-        label='Insulation Class', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. F or H'}),
-    )
-    spec_duty_cycle = forms.CharField(
-        label='Duty Cycle', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. S3-25%'}),
-    )
-    spec_painting = forms.CharField(
-        label='Painting Description', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. Marine C5H system, epoxy primer'}),
-    )
-    spec_motor_certificate = forms.CharField(
-        label='Motor Certificate', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. DNV, GL, ABS'}),
-    )
-    spec_weight_kg = forms.FloatField(
-        label='Weight (kg)', required=False, min_value=0,
-        widget=forms.NumberInput(attrs={**FLOAT_WIDGET_OPT, 'placeholder': 'e.g. 45'}),
-    )
-    spec_efficiency_class = forms.CharField(
-        label='Efficiency Class', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. IE2, IE3, IE4'}),
-    )
-    spec_voltage = forms.CharField(
-        label='Voltage / Frequency', required=False,
-        widget=forms.TextInput(attrs={**TEXT_WIDGET_OPT, 'placeholder': 'e.g. 400/690V 50Hz · 400/480/690V 60Hz'}),
-    )
+    motor_type           = forms.CharField(required=False, label='Motor type',               widget=forms.TextInput(attrs={'placeholder': 'Squirrel cage async helical bevel gearmotor marine execution'}))
+    frame_material       = forms.CharField(required=False, label='Frame / housing material',  widget=forms.TextInput(attrs={'placeholder': 'Cast Iron'}))
+    input_flange_mm      = forms.FloatField(required=False, label='Input flange diameter (mm)', widget=forms.NumberInput(attrs={'placeholder': '165'}))
+    output_flange_type   = forms.CharField(required=False, label='Output flange type',         widget=forms.TextInput(attrs={'placeholder': 'Square IEC O200 mm'}))
+    output_shaft_mm      = forms.FloatField(required=False, label='Output shaft diameter (mm)', widget=forms.NumberInput(attrs={'placeholder': '32'}))
+    output_shaft_length_mm = forms.FloatField(required=False, label='Output shaft length from flange (mm)', widget=forms.NumberInput(attrs={'placeholder': '50'}))
+    cooling_method       = forms.CharField(required=False, label='Cooling method',             widget=forms.TextInput(attrs={'placeholder': 'IC410 TENV'}))
+    ip_rating            = forms.CharField(required=False, label='IP protection class',        widget=forms.TextInput(attrs={'placeholder': 'IP66'}))
+    insulation_class     = forms.CharField(required=False, label='Insulation class',           widget=forms.TextInput(attrs={'placeholder': 'H'}))
+    efficiency_class     = forms.CharField(required=False, label='Efficiency class',           widget=forms.TextInput(attrs={'placeholder': 'IE2'}))
+    duty_cycle           = forms.ChoiceField(required=False, label='Duty cycle', choices=[('','— Select —'),('S1','S1'),('S2-30min','S2-30min'),('S2-12min','S2-12min'),('S3-60%','S3-60%'),('S3-40%','S3-40%'),('S3-25%','S3-25%'),('S3-15%','S3-15%')])
+    ambient_temp_min_c   = forms.FloatField(required=False, label='Ambient temp minimum (deg C)', widget=forms.NumberInput(attrs={'placeholder': '-20'}))
+    ambient_temp_max_c   = forms.FloatField(required=False, label='Ambient temp maximum (deg C)', widget=forms.NumberInput(attrs={'placeholder': '45'}))
+    voltage_400_50       = forms.ChoiceField(required=False, label='400V / 50Hz',  choices=[('','— Not confirmed —'),('Yes','Yes — confirmed'),('No','No')])
+    voltage_400_60       = forms.ChoiceField(required=False, label='400V / 60Hz',  choices=[('','— Not confirmed —'),('Yes','Yes — confirmed'),('No','No')])
+    voltage_480_60       = forms.ChoiceField(required=False, label='480V / 60Hz',  choices=[('','— Not confirmed —'),('Yes','Yes — confirmed'),('No','No')])
+    voltage_690_50       = forms.ChoiceField(required=False, label='690V / 50Hz',  choices=[('','— Not confirmed —'),('Yes','Yes — confirmed'),('No','No')])
+    voltage_690_60       = forms.ChoiceField(required=False, label='690V / 60Hz',  choices=[('','— Not confirmed —'),('Yes','Yes — confirmed'),('No','No')])
+    heater_voltage_vdc   = forms.FloatField(required=False, label='Standstill heater (VDC)',   widget=forms.NumberInput(attrs={'placeholder': '24'}))
+    coating_standard     = forms.CharField(required=False, label='Coating standard',           widget=forms.TextInput(attrs={'placeholder': 'C5H EN 12944-5'}))
+    surface_prep         = forms.CharField(required=False, label='Surface preparation',        widget=forms.TextInput(attrs={'placeholder': 'ISO 8501-3 Level P3'}))
+    coating_ndft_um      = forms.FloatField(required=False, label='Coating NDFT (um)',         widget=forms.NumberInput(attrs={'placeholder': '320'}))
+    paint_color          = forms.CharField(required=False, label='Paint colour',               widget=forms.TextInput(attrs={'placeholder': 'RAL 7035'}))
+    output_flange_coating = forms.CharField(required=False, label='Output flange coating',    widget=forms.TextInput(attrs={'placeholder': '1x primer only'}))
+    fasteners            = forms.CharField(required=False, label='Fasteners material',         widget=forms.TextInput(attrs={'placeholder': 'Stainless A4'}))
+    shaft_seal           = forms.CharField(required=False, label='Shaft seal material',        widget=forms.TextInput(attrs={'placeholder': 'FPM Viton'}))
+    nameplate            = forms.CharField(required=False, label='Nameplate material',         widget=forms.TextInput(attrs={'placeholder': 'Stainless steel'}))
 
 
 class SaveCalculationForm(forms.Form):

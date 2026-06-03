@@ -58,11 +58,84 @@ class MotorCalculation(models.Model):
     torque_margin = models.FloatField()
     motor_power_kw = models.FloatField()
 
+    # ── System parameters recorded at calculation time ─────────────────────────
+    i_slew           = models.FloatField(default=0)
+    eta_slew         = models.FloatField(default=0.40)
+    CF               = models.FloatField(default=0)
+    T_crane_lim      = models.FloatField(default=0)
+    T_gm_start_MAX   = models.FloatField(default=0)
+    gm_out_speed_rpm = models.FloatField(default=0)
+    gm_out_nom_nm    = models.FloatField(default=0)
+    gm_out_start_nm  = models.FloatField(default=0)
+    Mk_Mn            = models.FloatField(default=3.40)
+
+    # ── Crane output results ──────────────────────────────────────────────────
+    n_crane  = models.FloatField(default=0)
+    M_Nenn   = models.FloatField(default=0)
+    Ma_Max   = models.FloatField(default=0)
+    Mk_Max   = models.FloatField(default=0)
+    overall_pass = models.BooleanField(default=False)
+
+    # ── Physical specification fields ─────────────────────────────────────────
+    spec_motor_type       = models.CharField(max_length=200, blank=True)
+    spec_frame_material   = models.CharField(max_length=100, blank=True)
+    spec_input_flange_mm  = models.FloatField(null=True, blank=True)
+    spec_output_flange    = models.CharField(max_length=100, blank=True)
+    spec_output_shaft_mm  = models.FloatField(null=True, blank=True)
+    spec_shaft_length_mm  = models.FloatField(null=True, blank=True)
+    spec_cooling_method   = models.CharField(max_length=100, blank=True)
+    spec_ip_rating        = models.CharField(max_length=20,  blank=True)
+    spec_insulation_class = models.CharField(max_length=20,  blank=True)
+    spec_efficiency_class = models.CharField(max_length=20,  blank=True)
+    spec_duty_cycle       = models.CharField(max_length=50,  blank=True)
+    spec_ambient_temp_min = models.FloatField(null=True, blank=True)
+    spec_ambient_temp_max = models.FloatField(null=True, blank=True)
+    spec_voltage_400_50   = models.CharField(max_length=20, blank=True)
+    spec_voltage_400_60   = models.CharField(max_length=20, blank=True)
+    spec_voltage_480_60   = models.CharField(max_length=20, blank=True)
+    spec_voltage_690_50   = models.CharField(max_length=20, blank=True)
+    spec_voltage_690_60   = models.CharField(max_length=20, blank=True)
+    spec_heater_vdc       = models.FloatField(null=True, blank=True)
+    spec_coating_standard = models.CharField(max_length=100, blank=True)
+    spec_surface_prep     = models.CharField(max_length=100, blank=True)
+    spec_coating_ndft_um  = models.FloatField(null=True, blank=True)
+    spec_paint_color      = models.CharField(max_length=50,  blank=True)
+    spec_output_flange_coating = models.CharField(max_length=200, blank=True)
+    spec_fasteners        = models.CharField(max_length=100, blank=True)
+    spec_shaft_seal       = models.CharField(max_length=100, blank=True)
+    spec_nameplate        = models.CharField(max_length=100, blank=True)
+
     class Meta:
         ordering = ['-saved_at']
 
     def __str__(self):
         return f"{self.supplier_name} ({self.get_crane_type_display()})"
+
+    @property
+    def Ma_Mn_actual(self):
+        if self.gm_out_nom_nm:
+            return self.gm_out_start_nm / self.gm_out_nom_nm
+        return 0
+
+    @property
+    def start_utilisation_pct(self):
+        if self.T_crane_lim:
+            return self.Ma_Max / self.T_crane_lim * 100
+        return 0
+
+    @property
+    def nom_utilisation_pct(self):
+        if self.T_crane_lim:
+            return self.M_Nenn / self.T_crane_lim * 100
+        return 0
+
+    @property
+    def start_torque_margin_nm(self):
+        return self.T_crane_lim - self.Ma_Max
+
+    @property
+    def requires_soft_start(self):
+        return self.Ma_Max > self.T_crane_lim
 
     def recalculate(self):
         from .engine import drivetrain_sizing

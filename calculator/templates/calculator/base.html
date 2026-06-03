@@ -161,6 +161,11 @@
     <i class="bi bi-journal-code"></i> Formula Reference
   </a>
 
+  <a href="{% url 'torque_curve' %}"
+     class="sidebar-link {% if request.resolver_match.url_name == 'torque_curve' %}active{% endif %}">
+    <i class="bi bi-graph-up-arrow"></i> Torque-Speed Curve
+  </a>
+
   <a href="{% url 'motors:list' %}"
      class="sidebar-link {% if active_page == 'motors' %}active{% endif %}">
     <i class="bi bi-diagram-3"></i> Supplier Motors

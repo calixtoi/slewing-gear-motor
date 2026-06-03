@@ -4,47 +4,43 @@ import tempfile
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from .forms import DrivetrainForm, SaveCalculationForm, DatasheetUploadForm, MotorSpecsForm, TextDatasheetForm
-from .engine import drivetrain_sizing, SAFETY_FACTOR
+from .engine import (
+    drivetrain_sizing,
+    check_physical_compliance,
+    size_known_motor,
+    CRANE_PARAMS,
+    CRANE_STANDARD_PF,
+    CRANE_PF_XXL,
+    KNOWN_MOTORS,
+    PHYSICAL_REQUIREMENTS,
+    TORQUE_CONSTANT,
+    ETA_GB_ASSUMED,
+    SAFETY_FACTOR,
+)
 from .models import MotorCalculation
 from .pdf_parser import (
     parse_datasheet, parse_text, check_compliance, specs_to_form_initial,
     extract_motor_params, extract_motor_params_from_pdf, MOTOR_PARAM_LABELS,
 )
 
-# Raw strings so backslashes reach KaTeX unchanged.
 FORMULAS = {
-    'f1':  r'M_{2,\max} = \dfrac{M_{\max}}{i_{\text{worm}} \cdot \eta}',
-    'f2':  r'M_{2,\text{nom}} = \dfrac{M_{\text{nom}}}{i_{\text{worm}} \cdot \eta}',
-    'f3':  r'M_{\text{gear,req}} = M_{2,\text{nom}} \times S_f \qquad S_f = 1.34',
-    'f4':     r'i_{\text{bevel}} = \dfrac{n_{\text{motor}}}{n_{\text{gear,out}}}',
-    'f4_inv': r'n_{\text{gear,out}} = \dfrac{n_{\text{motor}}}{i_{\text{bevel}}}',
-    'f5':  r'n_{\text{slew}} = \dfrac{n_{\text{gear,out}}}{i_{\text{worm}}}',
-    'f2_inv': r'M_{2,\text{nom}} = M_n \cdot i_{\text{worm}} \cdot \eta_{\text{worm}} \quad \text{(back-calc from motor)}',
-    'f6':  r'M_{\text{motor,req}} = \dfrac{M_{2,\max}}{i_{\text{bevel}} \cdot \eta_{\text{bevel}}}',
-    'f7':  r'M_{\text{start}} = M_n \cdot k_{\text{start}}, \qquad k_{\text{start}} = \dfrac{M_a}{M_n}',
-    'f8':  r'\text{margin} = \dfrac{M_{\text{start}}}{M_{\text{motor,req}}}',
-    'f8c': (
-        r'\begin{cases}'
-        r'\text{margin} \geq 1.5 & \Rightarrow \textbf{OK} \\'
-        r'1.0 \leq \text{margin} < 1.5 & \Rightarrow \textbf{Low\;Margin} \\'
-        r'\text{margin} < 1.0 & \Rightarrow \textbf{CRITICAL\;FAIL\;—\;Motor\;Will\;Stall}'
-        r'\end{cases}'
-    ),
-    'f9':     r'P_{\text{rated}}\,[\text{kW}] = \dfrac{M_n\,[\text{Nm}] \cdot n_{\text{motor}}\,[\text{rpm}]}{9550}',
-    'f9_inv': r'M_n\,[\text{Nm}] = \dfrac{9550 \times P_{\text{rated}}\,[\text{kW}]}{n_{\text{motor}}\,[\text{rpm}]}',
-    'f9b':    r'9550 = \dfrac{60 \times 10^3}{2\pi} \approx 9549.3',
-    'fg1': r'M_{2,\text{nom}} = \dfrac{M_{\text{nom}}}{i_{\text{worm}} \cdot \eta}',
-    'fg2': r'M_{2,\max} = \dfrac{M_{\max}}{i_{\text{worm}} \cdot \eta}',
-    'fg3': r'\lambda = \dfrac{M_{2,\text{nom}}}{M_{2,\max}}',
-    'fg4': r'M_{\text{gear,soll}} = M_{2,\text{nom}} + \left(M_{2,\max} - M_{2,\text{nom}}\right) \cdot \lambda',
-    'fg4_exp': (
-        r'M_{\text{gear,soll}} = M_{2,\text{nom}} + '
-        r'\left(M_{2,\max} - M_{2,\text{nom}}\right) \cdot '
-        r'\dfrac{M_{2,\text{nom}}}{M_{2,\max}}'
-    ),
-    'fs_margin': r'\text{margin} = \dfrac{\text{value}_{\text{supplier}}}{\text{value}_{\text{required}}} \geq 1.10',
-    'fs_ratio':  r'\text{deviation} = \dfrac{|\,r_{\text{supplier}} - r_{\text{calc}}\,|}{r_{\text{calc}}} \leq 2\%',
+    'f_CF':    r'CF = i_{\text{slew}} \times \eta_{\text{slew}}',
+    'f1':      r'T_{GM,start,MAX} = \dfrac{T_{crane,lim}}{CF}',
+    'f2':      r'T_{GM,nom,req} = \dfrac{T_{crane,nom}}{CF}',
+    'f8':      r'M_{n,motor} = \dfrac{P_{kW} \times 9550}{n_{motor}}',
+    'f8_note': r'9550 \approx \dfrac{60{,}000}{2\pi} \text{ — converts kW\cdotRPM to Nm}',
+    'f4':      r'i_{gb} = \dfrac{n_{motor}}{n_{GM,out}}',
+    'f4_inv':  r'n_{GM,out} = \dfrac{n_{motor}}{i_{gb}}',
+    'f5':      r'n_{crane} = \dfrac{n_{GM,out}}{i_{slew}}',
+    'f_MNenn': r'M_{Nenn} = T_{GM,out,nom} \times CF',
+    'f_MaMax': r'M_{a,Max} = T_{GM,out,start} \times CF',
+    'f_MkMax': r'M_{k,Max} = M_{Nenn} \times \left(\dfrac{M_k}{M_n}\right)',
+    'f_MaMn':  r'\left(\dfrac{M_a}{M_n}\right)_{MAX} = \dfrac{T_{GM,start,MAX}}{T_{GM,out,nom}}',
+    'fg3':     r'M_{gear,req} = M_{2,nom} \times 1.34',
+    'fs_margin': r'\text{margin} = \dfrac{T_{crane,lim} - M_{a,Max}}{T_{crane,lim}} \times 100\%',
 }
 
 
@@ -85,75 +81,181 @@ def _effective_gearbox_speed(d):
     """Return gearbox output speed: direct input wins; otherwise compute from gear ratio."""
     if d.get('gearbox_output_speed'):
         return d['gearbox_output_speed']
-    return d['motor_speed'] / d['gear_ratio']
+    if d.get('gear_ratio') and d.get('motor_speed'):
+        return d['motor_speed'] / d['gear_ratio']
+    return None
 
 
-def index(request):
-    results = None
+def _crane_context():
+    ctx = {}
+    for ctype, params in CRANE_PARAMS.items():
+        ctx[f'params_{ctype}'] = params
+    ctx['crane_standard_pf'] = CRANE_STANDARD_PF
+    ctx['crane_pf_xxl']      = CRANE_PF_XXL
+    return ctx
+
+
+def calculator(request):
+    result = None
+    phys_checks = None
+    datasheet_json = ''
     form = DrivetrainForm()
     specs_form = MotorSpecsForm()
-    datasheet = None
-    datasheet_json = ''
-    compliance = None
-
-    _load_fields = [
-        'crane_torque_max', 'crane_torque_nom', 'worm_ratio', 'worm_efficiency',
-        'motor_speed', 'gearbox_output_speed', 'gear_ratio', 'motor_rated_torque', 'starting_factor',
-        'supplier_motor_power_kw', 'supplier_motor_rated_torque',
-        'supplier_motor_starting_torque', 'supplier_gearbox_rated_torque',
-        'supplier_bevel_ratio', 'supplier_worm_ratio',
-    ]
-    if request.method == 'GET' and any(k in request.GET for k in _load_fields):
-        form = DrivetrainForm(initial={k: request.GET[k] for k in _load_fields if k in request.GET})
+    save_form = SaveCalculationForm()
+    error = None
 
     if request.method == 'POST':
         form = DrivetrainForm(request.POST)
         specs_form = MotorSpecsForm(request.POST)
-        datasheet, datasheet_json = _load_datasheet(request.POST)
+        datasheet_json = request.POST.get('datasheet_data', '')
+
         if form.is_valid():
             d = form.cleaned_data
-            n_gear_out_eff = _effective_gearbox_speed(d)
-            results = drivetrain_sizing(
-                crane_torque_max=d['crane_torque_max'],
-                crane_torque_nom=d.get('crane_torque_nom'),
-                worm_ratio=d['worm_ratio'],
-                worm_efficiency=d['worm_efficiency'],
-                motor_speed=d['motor_speed'],
-                gearbox_output_speed=n_gear_out_eff,
-                motor_rated_torque=d['motor_rated_torque'],
-                starting_factor=d['starting_factor'],
-                bevel_efficiency=d['bevel_efficiency'],
-                supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
-                supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
-                supplier_motor_starting_torque=d.get('supplier_motor_starting_torque'),
-                supplier_gearbox_rated_torque=d.get('supplier_gearbox_rated_torque'),
-                supplier_bevel_ratio=d.get('supplier_bevel_ratio'),
-                supplier_worm_ratio=d.get('supplier_worm_ratio'),
-            )
 
-        if specs_form.is_valid():
-            compliance = check_compliance(specs_form.cleaned_data)
+            try:
+                # Determine which interface is being used (old or new)
+                using_new_interface = any([d.get('motor_power'), d.get('supplier_output_torque'), d.get('supplier_starting_torque')])
 
-    save_initial = {}
-    if datasheet:
-        save_initial = {
-            'supplier_name':   datasheet.get('supplier', ''),
-            'crane_type':      datasheet.get('crane_type', ''),
-            'price_prototype': datasheet.get('price_prototype'),
-            'price_series':    datasheet.get('price_series'),
+                if using_new_interface:
+                    # New interface
+                    crane_type      = d.get('crane_type', CRANE_STANDARD_PF)
+                    motor_power_kw  = float(d.get('motor_power') or 0)
+                    motor_speed_rpm = float(d.get('motor_speed_new') or 0)
+                    gm_out_nom_nm   = float(d.get('supplier_output_torque') or 0)
+                    gm_out_start_nm = float(d.get('supplier_starting_torque') or 0)
+                    Mk_Mn           = float(d.get('mk_mn_ratio') or 3.40)
+
+                    gm_out_speed_rpm = None
+                    if d.get('gearbox_output_speed'):
+                        gm_out_speed_rpm = float(d['gearbox_output_speed'])
+                    elif d.get('gear_ratio') and motor_speed_rpm:
+                        gm_out_speed_rpm = motor_speed_rpm / float(d['gear_ratio'])
+
+                    if not gm_out_speed_rpm or not gm_out_nom_nm or not gm_out_start_nm or not motor_power_kw:
+                        error = 'Please provide all required fields: Motor Power, Motor Speed, Geared Motor Output Torque, Starting Torque, and either Output Speed or Gear Ratio.'
+                    else:
+                        i_gb = float(d['gear_ratio']) if d.get('gear_ratio') else None
+                        result = drivetrain_sizing(
+                            crane_type=crane_type,
+                            motor_power_kw=motor_power_kw,
+                            motor_speed_rpm=motor_speed_rpm,
+                            gm_out_speed_rpm=gm_out_speed_rpm,
+                            gm_out_nom_nm=gm_out_nom_nm,
+                            gm_out_start_nm=gm_out_start_nm,
+                            Mk_Mn=Mk_Mn,
+                            i_gb=i_gb,
+                        )
+                        if specs_form.is_valid():
+                            phys_checks = check_physical_compliance(specs_form.cleaned_data)
+                else:
+                    # Old interface - for backward compatibility with existing templates
+                    # TODO: Map old fields to new engine when template is updated
+                    error = 'Please use the new form interface with Motor Power, Motor Speed, Output Torque, and Starting Torque fields.'
+
+            except (ValueError, TypeError) as e:
+                error = f'Invalid input: {str(e)}'
+
+    elif request.GET:
+        initial = {}
+        for key in ['crane_type','motor_power','motor_speed_new','gear_ratio',
+                    'gearbox_output_speed','supplier_output_torque','supplier_starting_torque','mk_mn_ratio']:
+            if key in request.GET:
+                initial[key] = request.GET[key]
+        if initial:
+            form = DrivetrainForm(initial=initial)
+
+    context = {
+        'form': form, 'specs_form': specs_form, 'save_form': save_form,
+        'result': result, 'phys_checks': phys_checks,
+        'phys_requirements': PHYSICAL_REQUIREMENTS,
+        'datasheet_data': datasheet_json, 'error': error,
+        'known_motors': KNOWN_MOTORS,
+        **FORMULAS, **_crane_context(),
+    }
+    return render(request, 'calculator/index.html', context)
+
+
+def index(request):
+    return calculator(request)
+
+
+def requirements(request):
+    reference = {k: size_known_motor(k) for k in KNOWN_MOTORS}
+    req_tables = {}
+    for ctype, params in CRANE_PARAMS.items():
+        CF             = params['i_slew'] * params['eta_slew']
+        req_tables[ctype] = {
+            'params':          params,
+            'CF':              CF,
+            'T_gm_start_MAX':  params['T_crane_lim'] / CF,
+            'T_gm_nom_req':    params['T_crane_nom']  / CF,
+            'n_gm_min':        params['n_crane_min'] * params['i_slew'],
+            'n_gm_max':        params['n_crane_max'] * params['i_slew'],
+            'Ma_Mn_MAX':       (params['T_crane_lim'] / CF) / (params['T_crane_nom'] / CF),
         }
-    save_form = SaveCalculationForm(initial=save_initial)
+    context = {
+        'req_tables': req_tables, 'reference': reference,
+        'known_motors': KNOWN_MOTORS, 'phys_requirements': PHYSICAL_REQUIREMENTS,
+        **FORMULAS, **_crane_context(),
+    }
+    return render(request, 'calculator/requirements.html', context)
 
-    return render(request, 'calculator/index.html', {
-        'form': form,
-        'specs_form': specs_form,
-        'save_form': save_form,
-        'results': results,
-        'datasheet': datasheet,
-        'datasheet_json': datasheet_json,
-        'compliance': compliance,
-        'active_page': 'calculator',
-        **FORMULAS,
+
+@csrf_exempt
+def calculate_ajax(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    crane_type        = data.get('crane_type', CRANE_STANDARD_PF)
+    motor_power_kw    = float(data.get('motor_power_kw', 0))
+    motor_speed_rpm   = float(data.get('motor_speed_rpm', 1415))
+    gm_out_speed_rpm  = float(data.get('gm_out_speed_rpm', 0))
+    gm_out_nom_nm     = float(data.get('gm_out_nom_nm', 0))
+    gm_out_start_nm   = float(data.get('gm_out_start_nm', 0))
+    Mk_Mn             = float(data.get('Mk_Mn', 3.40))
+    gm_out_pullup_nm  = float(data['gm_out_pullup_nm']) if data.get('gm_out_pullup_nm') else None
+    i_gb              = float(data['i_gb']) if data.get('i_gb') else None
+
+    if not all([gm_out_speed_rpm, gm_out_nom_nm, gm_out_start_nm]):
+        return JsonResponse({'error': 'Missing required fields'}, status=400)
+    if crane_type not in CRANE_PARAMS:
+        return JsonResponse({'error': f'Unknown crane_type: {crane_type}'}, status=400)
+
+    r = drivetrain_sizing(
+        crane_type=crane_type, motor_power_kw=motor_power_kw,
+        motor_speed_rpm=motor_speed_rpm, gm_out_speed_rpm=gm_out_speed_rpm,
+        gm_out_nom_nm=gm_out_nom_nm, gm_out_start_nm=gm_out_start_nm,
+        Mk_Mn=Mk_Mn, i_gb=i_gb, gm_out_pullup_nm=gm_out_pullup_nm,
+    )
+    return JsonResponse({
+        'crane_label': r.crane_label, 'CF': round(r.CF, 2),
+        'i_slew': r.i_slew, 'eta_slew': r.eta_slew,
+        'T_crane_lim': r.T_crane_lim, 'T_gm_start_MAX': round(r.T_gm_start_MAX, 1),
+        'T_gm_nom_required': round(r.T_gm_nom_required, 1),
+        'Ma_Mn_MAX': round(r.Ma_Mn_MAX, 2), 'n_gm_min': r.n_gm_min, 'n_gm_max': r.n_gm_max,
+        'Mn_motor': round(r.Mn_motor, 2), 'i_gb': round(r.i_gb, 2),
+        'n_crane': round(r.n_crane, 4), 'M_Nenn': round(r.M_Nenn, 0),
+        'Ma_Max': round(r.Ma_Max, 0), 'Mk_Max': round(r.Mk_Max, 0),
+        'Ma_Mn_actual': round(r.Ma_Mn_actual, 2),
+        'nom_utilisation_pct': round(r.nom_utilisation_pct, 1),
+        'start_utilisation_pct': round(r.start_utilisation_pct, 1),
+        'overall_status': r.overall_status, 'checks': r.checks,
+        'torque_curve': {
+            'points': [
+                {'speed_pct': 0,   'label': 'Locked rotor (startup)',  'torque_nm': round(r.gm_out_locked_rotor_nm, 1),  'is_limit': r.gm_out_locked_rotor_nm > r.T_gm_start_MAX},
+                {'speed_pct': 40,  'label': 'Pull-up torque',          'torque_nm': round(r.gm_out_pullup_nm, 1),        'is_limit': False},
+                {'speed_pct': 80,  'label': 'Breakdown torque (Mk)',   'torque_nm': round(r.gm_out_breakdown_nm, 1),     'is_limit': False},
+                {'speed_pct': 100, 'label': 'Rated torque (nominal)',  'torque_nm': round(r.gm_out_nom_nm, 1),           'is_limit': False},
+            ],
+            'limit_line': round(r.T_gm_start_MAX, 1),
+            'limit_label': f'Max permissible starting torque ({r.T_gm_start_MAX:,.0f} Nm)',
+            'rated_speed_rpm': round(r.motor_speed_rpm, 0),
+            'gm_out_speed_rpm': round(r.gm_out_speed_rpm, 1),
+        },
     })
 
 

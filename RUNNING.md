@@ -64,9 +64,14 @@ The SQLite database (`db.sqlite3`) is created automatically on first run. Saved 
 
 ## Troubleshooting
 
-- **Port 8080 already in use**: Use a different port:
+- **Port 8080 already in use**: The server must run on port 8080. To free it up, find and stop the process using it:
   ```powershell
-  py manage.py runserver 127.0.0.1:8000
+  netstat -ano | findstr :8080
+  taskkill /PID <PID> /F
+  ```
+  Then restart with:
+  ```powershell
+  py manage.py runserver 127.0.0.1:8080
   ```
 
 - **Missing dependencies**: Install with:

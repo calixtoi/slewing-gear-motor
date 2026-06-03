@@ -1,0 +1,372 @@
+{% extends "calculator/base.html" %}
+{% block title %}Torque-Speed Curve — Slewing Drive Calculator{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="mb-4">
+    <h2 class="fw-semibold mb-1">Torque-Speed Curve</h2>
+    <p class="text-muted mb-0">
+      Gearbox output shaft torque (Nm) vs motor speed (% of rated).
+      The red dashed line shows the structural limit at the gearbox output shaft.
+      If the locked-rotor torque (at 0% speed) crosses this line, the slewing ring
+      experiences structural overload on every motor startup.
+    </p>
+  </div>
+
+  {# ── Motor selector tabs ──────────────────────────────────────────────── #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <ul class="nav nav-tabs card-header-tabs" id="motorTabs">
+        {% for key, data in known_results.items %}
+        <li class="nav-item">
+          <button class="nav-link {% if forloop.first %}active{% endif %}"
+                  data-motor-key="{{ key }}"
+                  onclick="showMotor('{{ key }}')">
+            {{ data.motor.label }}
+            {% if data.result.checks.start_torque.status == 'PASS' %}
+              <span class="badge bg-success ms-1">PASS</span>
+            {% else %}
+              <span class="badge bg-danger ms-1">FAIL</span>
+            {% endif %}
+          </button>
+        </li>
+        {% endfor %}
+        <li class="nav-item ms-auto">
+          <button class="nav-link" onclick="showCustomForm()">
+            <i class="bi bi-plus-circle"></i> Custom motor
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body">
+      {# Chart canvas #}
+      <div style="position:relative; height:420px;">
+        <canvas id="torqueCurveChart"></canvas>
+      </div>
+
+      {# Key points annotation table #}
+      <div class="mt-3" id="annotationTable"></div>
+    </div>
+  </div>
+
+  {# ── All motors side-by-side summary ──────────────────────────────────── #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h6 class="mb-0">All motors — key torque points at gearbox output shaft</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm mb-0 align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Motor</th>
+              <th>Crane</th>
+              <th class="text-center">Locked rotor<br><small class="fw-normal">Anlaufdrehmoment (Nm)</small></th>
+              <th class="text-center">Pull-up<br><small class="fw-normal">Nm</small></th>
+              <th class="text-center">Breakdown Mk<br><small class="fw-normal">Nm</small></th>
+              <th class="text-center">Nominal<br><small class="fw-normal">Nm</small></th>
+              <th class="text-center">Structural limit<br><small class="fw-normal">Nm</small></th>
+              <th class="text-center">Start check</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, data in known_results.items %}
+            <tr>
+              <td><strong>{{ data.motor.label }}</strong><br><small class="text-muted">{{ data.motor.duty_cycle }} — {{ data.motor.motor_power_kw }} kW</small></td>
+              <td>{{ data.result.crane_label }}</td>
+              <td class="text-center {% if data.result.checks.start_torque.status == 'FAIL' %}text-danger fw-bold{% endif %}">
+                {{ data.result.gm_out_locked_rotor_nm|floatformat:0 }}
+              </td>
+              <td class="text-center">{{ data.result.gm_out_pullup_nm|floatformat:0 }}</td>
+              <td class="text-center">{{ data.result.gm_out_breakdown_nm|floatformat:0 }}</td>
+              <td class="text-center">{{ data.result.gm_out_nom_nm|floatformat:0 }}</td>
+              <td class="text-center text-muted">{{ data.result.T_gm_start_MAX|floatformat:0 }}</td>
+              <td class="text-center">
+                {% if data.result.checks.start_torque.status == 'PASS' %}
+                  <span class="badge bg-success">PASS</span>
+                {% else %}
+                  <span class="badge bg-danger">FAIL</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# ── Custom motor input form ───────────────────────────────────────────── #}
+  <div class="card shadow-sm mb-4" id="customForm" style="display:none;">
+    <div class="card-header bg-secondary text-white">
+      <h6 class="mb-0">Plot a custom motor</h6>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Crane type</label>
+          <select class="form-select" id="c_crane_type">
+            <option value="standard_pf">Standard PF (i=121)</option>
+            <option value="pf_xxl">PF-XXL (i=150)</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Motor power (kW)</label>
+          <input type="number" class="form-control" id="c_power" step="0.01" placeholder="1.5">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Motor speed (RPM)</label>
+          <input type="number" class="form-control" id="c_speed" placeholder="1415">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">GM output speed (RPM)</label>
+          <input type="number" class="form-control" id="c_gm_speed" step="0.1" placeholder="37">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Gearbox ratio i_gb</label>
+          <input type="number" class="form-control" id="c_ratio" step="0.01" placeholder="38.17">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">GM output nominal torque (Nm)</label>
+          <input type="number" class="form-control" id="c_nom" placeholder="390">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">GM output starting torque — Anlaufdrehmoment (Nm)</label>
+          <input type="number" class="form-control" id="c_start" placeholder="1130">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Pull-up torque (Nm) — leave blank to estimate</label>
+          <input type="number" class="form-control" id="c_pullup" placeholder="optional">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Mk/Mn ratio</label>
+          <input type="number" class="form-control" id="c_mk_mn" step="0.01" placeholder="3.40" value="3.40">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary" onclick="plotCustomMotor()">
+            <i class="bi bi-graph-up"></i> Plot this motor
+          </button>
+        </div>
+      </div>
+      <div id="customError" class="text-danger mt-2" style="display:none;"></div>
+    </div>
+  </div>
+
+  {# ── Explanation card ─────────────────────────────────────────────────── #}
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <h6 class="mb-0">How to read this chart</h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-2"><strong>X axis</strong> — Motor speed as a percentage of rated speed (0% = motor just started, 100% = normal running speed)</p>
+          <p class="mb-2"><strong>Y axis</strong> — Torque at the gearbox output shaft in Nm. This is the torque entering the slewing ring worm.</p>
+          <p class="mb-0"><strong>Red dashed line</strong> — Structural limit at the gearbox output shaft (= crane structural limit ÷ CF). If the blue curve starts ABOVE this line, the slewing ring is overloaded at every motor startup.</p>
+        </div>
+        <div class="col-md-6">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-secondary"><tr><th>Point</th><th>Speed</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge bg-danger">●</span> Locked rotor</td><td>0%</td><td>Torque at the instant the motor starts. Checked against structural limit.</td></tr>
+              <tr><td><span class="badge bg-primary">●</span> Pull-up</td><td>~40%</td><td>Minimum torque during acceleration. Motor must overcome this to reach rated speed.</td></tr>
+              <tr><td><span class="badge bg-warning text-dark">●</span> Breakdown (Mk)</td><td>~80%</td><td>Peak torque. Motor stalls if load exceeds this.</td></tr>
+              <tr><td><span class="badge bg-success">●</span> Nominal</td><td>100%</td><td>Rated operating torque. Normal crane slewing.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# Chart.js from CDN #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// All known motor curve data from Django template
+const knownData = {{ known_results_json|safe }};
+let chart = null;
+let activeKey = null;
+
+function buildChartConfig(data, motorLabel) {
+  const curve = data.curve_points.map(p => ({ x: p.x, y: p.y }));
+  const limitY = data.limit_line;
+
+  // Annotation points as scatter dataset
+  const annotationPoints = data.named_points.map(p => ({
+    x: p.speed_pct,
+    y: p.torque_nm,
+  }));
+
+  // Point colors
+  const pointColors = data.named_points.map(p => p.color === 'red' ? '#dc3545' : p.color === 'green' ? '#198754' : p.color === 'orange' ? '#fd7e14' : '#0d6efd');
+
+  // Horizontal limit line as dataset
+  const limitLine = [
+    { x: 0,   y: limitY },
+    { x: 100, y: limitY },
+  ];
+
+  return {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: motorLabel + ' — torque curve',
+          data: curve,
+          type: 'line',
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13,110,253,0.08)',
+          borderWidth: 2.5,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0,
+          order: 2,
+        },
+        {
+          label: data.limit_label,
+          data: limitLine,
+          type: 'line',
+          borderColor: '#dc3545',
+          borderWidth: 2,
+          borderDash: [8, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 3,
+        },
+        {
+          label: 'Key torque points',
+          data: annotationPoints,
+          type: 'scatter',
+          pointRadius: 8,
+          pointHoverRadius: 10,
+          backgroundColor: pointColors,
+          borderColor: '#fff',
+          borderWidth: 2,
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 2) {
+                const pt = data.named_points[ctx.dataIndex];
+                return pt.label + ': ' + pt.torque_nm + ' Nm' + (pt.exceeds_limit ? ' ⚠ EXCEEDS LIMIT' : '');
+              }
+              if (ctx.datasetIndex === 1) return 'Structural limit: ' + limitY + ' Nm';
+              return ctx.parsed.y.toFixed(1) + ' Nm at ' + ctx.parsed.x + '% speed';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'Motor speed (% of rated speed)' },
+          min: 0, max: 105,
+          ticks: { callback: v => v + '%' },
+        },
+        y: {
+          title: { display: true, text: 'Gearbox output shaft torque (Nm)' },
+          min: 0,
+        },
+      },
+    },
+  };
+}
+
+function renderAnnotationTable(data) {
+  let html = '<table class="table table-sm table-bordered mb-0"><thead class="table-secondary"><tr><th>Speed</th><th>Torque point</th><th class="text-center">Torque (Nm)</th><th class="text-center">vs structural limit (' + data.limit_line + ' Nm)</th><th>Meaning</th></tr></thead><tbody>';
+  data.named_points.forEach(p => {
+    const margin = data.limit_line - p.torque_nm;
+    const statusBadge = p.exceeds_limit
+      ? '<span class="badge bg-danger">EXCEEDS LIMIT by ' + Math.abs(margin).toFixed(0) + ' Nm</span>'
+      : '<span class="badge bg-success">Within limit — margin ' + margin.toFixed(0) + ' Nm</span>';
+    html += '<tr><td>' + p.speed_pct + '% (' + Math.round(p.speed_pct / 100 * data.rated_speed_rpm) + ' RPM)</td><td><strong>' + p.label + '</strong><br><small class="text-muted">' + p.sublabel + '</small></td><td class="text-center fw-bold ' + (p.exceeds_limit ? 'text-danger' : '') + '">' + p.torque_nm + '</td><td class="text-center">' + statusBadge + '</td><td class="text-muted small">' + (p.speed_pct === 0 ? 'This is the value checked against the structural limit. If it exceeds the limit, the slewing ring is overloaded at every startup.' : p.speed_pct === 40 ? 'Minimum torque during acceleration. Must be positive for motor to reach rated speed.' : p.speed_pct === 80 ? 'Peak torque. Load must stay below this or motor stalls.' : 'Normal operating torque during crane slewing.') + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('annotationTable').innerHTML = html;
+}
+
+function showMotor(key) {
+  activeKey = key;
+  const data = knownData[key];
+  document.getElementById('customForm').style.display = 'none';
+
+  // Update tab active state
+  document.querySelectorAll('#motorTabs .nav-link').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.motorKey === key);
+  });
+
+  const config = buildChartConfig(data, key);
+  if (chart) {
+    chart.destroy();
+  }
+  chart = new Chart(document.getElementById('torqueCurveChart'), config);
+  renderAnnotationTable(data);
+}
+
+function showCustomForm() {
+  document.getElementById('customForm').style.display = 'block';
+  document.querySelectorAll('#motorTabs .nav-link').forEach(btn => btn.classList.remove('active'));
+}
+
+async function plotCustomMotor() {
+  const errDiv = document.getElementById('customError');
+  errDiv.style.display = 'none';
+
+  const payload = {
+    crane_type:       document.getElementById('c_crane_type').value,
+    motor_power_kw:   parseFloat(document.getElementById('c_power').value),
+    motor_speed_rpm:  parseFloat(document.getElementById('c_speed').value),
+    gm_out_speed_rpm: parseFloat(document.getElementById('c_gm_speed').value),
+    gm_out_nom_nm:    parseFloat(document.getElementById('c_nom').value),
+    gm_out_start_nm:  parseFloat(document.getElementById('c_start').value),
+    Mk_Mn:            parseFloat(document.getElementById('c_mk_mn').value) || 3.40,
+    i_gb:             parseFloat(document.getElementById('c_ratio').value) || null,
+  };
+  const pullup = parseFloat(document.getElementById('c_pullup').value);
+  if (!isNaN(pullup)) payload.gm_out_pullup_nm = pullup;
+
+  if (isNaN(payload.motor_power_kw) || isNaN(payload.gm_out_nom_nm) || isNaN(payload.gm_out_start_nm)) {
+    errDiv.textContent = 'Please fill in at least: motor power, GM output nominal torque, and GM output starting torque.';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  try {
+    const resp = await fetch("{% url 'torque_curve_ajax' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    const config = buildChartConfig(data, 'Custom motor');
+    if (chart) chart.destroy();
+    chart = new Chart(document.getElementById('torqueCurveChart'), config);
+    renderAnnotationTable(data);
+  } catch (e) {
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block';
+  }
+}
+
+// Show first motor on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const firstKey = Object.keys(knownData)[0];
+  if (firstKey) showMotor(firstKey);
+});
+</script>
+{% endblock %}
