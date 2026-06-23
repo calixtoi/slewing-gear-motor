@@ -203,7 +203,25 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    var opts = { throwOnError: false, errorColor: '#dc3545' };
+    var opts = { throwOnError: false, errorColor: '#dc3545', macros: {
+      "\\text": "\\mathrm{#1}"
+    }};
+
+    // Render Jupyter-style formula divs with KaTeX
+    document.querySelectorAll('.jupyter-formula').forEach(function (el) {
+      var mathContent = el.textContent.trim();
+      if (mathContent.startsWith('$$') && mathContent.endsWith('$$')) {
+        mathContent = mathContent.slice(2, -2);
+      }
+      el.innerHTML = '';
+      try {
+        katex.render(mathContent, el, Object.assign({}, opts, { displayMode: true }));
+      } catch (e) {
+        el.textContent = 'Error rendering formula';
+      }
+    });
+
+    // Legacy rendering for django-latexify
     document.querySelectorAll('.django-latexify.math.block').forEach(function (el) {
       katex.render(el.textContent, el, Object.assign({}, opts, { displayMode: true }));
     });

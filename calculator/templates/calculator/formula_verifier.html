@@ -7,8 +7,147 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <style>
-    body { padding: 1.5rem; }
+    body { padding: 1.5rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+    /* Jupyter-style formula display */
+    .jupyter-formula {
+      background: #f5f7fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 1.5rem 2rem;
+      margin: 1.5rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+      font-size: 1.3rem;
+      line-height: 1.8;
+    }
+
+    .jupyter-formula.substitution {
+      background: linear-gradient(135deg, #fff8f0 0%, #fffbf5 100%);
+      border-color: #ffa500;
+      border-left: 4px solid #ffa500;
+    }
+
+    .jupyter-formula.definition {
+      background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+      border-color: #0056b3;
+      border-left: 4px solid #0056b3;
+    }
+
+    .jupyter-formula.result {
+      background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+      border-color: #28a745;
+      border-left: 4px solid #28a745;
+    }
+
+    /* Formula step container */
+    .formula-step-card {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-top: 4px solid #007bff;
+    }
+
+    .formula-step-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-right: 1rem;
+    }
+
+    .step-titles h5 {
+      margin: 0;
+      color: #0056b3;
+      font-weight: 700;
+    }
+
+    .step-titles small {
+      color: #888;
+      display: block;
+      margin-top: 0.3rem;
+    }
+
+    /* Input values grid */
+    .input-values-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .input-value-card {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 6px;
+      border-left: 3px solid #007bff;
+    }
+
+    .input-value-label {
+      font-size: 0.85rem;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-value-content {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .input-value-number {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0056b3;
+      font-family: 'Courier New', monospace;
+    }
+
+    .input-value-unit {
+      font-size: 0.9rem;
+      color: #999;
+      font-weight: 600;
+    }
+
+    .input-value-source {
+      font-size: 0.75rem;
+      color: #aaa;
+      margin-top: 0.3rem;
+    }
+
+    /* Section labels */
+    .section-label {
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 1.5rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .input-section { background: #f8f9fa; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
     .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .form-group { display: flex; flex-direction: column; }
@@ -170,125 +309,109 @@
       <h6 class="mb-4"><i class="bi bi-diagram-3"></i> Step-by-Step Calculation Breakdown</h6>
 
       {% for step in calculation_steps %}
-        <div class="card mb-3">
-          <div class="card-header" style="background: linear-gradient(90deg, #007bff, #0056b3); color: white;">
-            <strong>Step {{ step.number }}: {{ step.title }}</strong>
-            <small class="d-block" style="opacity: 0.9;">{{ step.description }}</small>
+        <div class="formula-step-card">
+          <div class="formula-step-header">
+            <div class="step-number">{{ step.number }}</div>
+            <div class="step-titles">
+              <h5>{{ step.title }}</h5>
+              <small>{{ step.description }}</small>
+            </div>
           </div>
-          <div class="card-body">
 
-            <!-- Input Values -->
-            {% if step.inputs %}
-              <div class="mb-3">
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-arrow-right-circle"></i> Input Values
-                </h6>
-                <div class="row">
-                  {% for input in step.inputs %}
-                    <div class="col-md-6 col-lg-4 mb-2">
-                      <div style="background: #f8f9fa; padding: 0.8rem; border-radius: 4px; border-left: 3px solid #007bff;">
-                        <div style="font-family: 'Courier New', monospace; font-weight: 600; color: #0056b3;">
-                          ${{ input.label }}$
-                        </div>
-                        <div style="font-weight: 700; font-size: 1.1rem; color: #333;">
-                          {{ input.value|floatformat:2 }}
-                          <span style="font-size: 0.85rem; color: #666; margin-left: 0.3rem;">{{ input.unit }}</span>
-                        </div>
-                        {% if input.source %}
-                          <small style="color: #999;">{{ input.source }}</small>
-                        {% endif %}
-                      </div>
-                    </div>
-                  {% endfor %}
+          <!-- Input Values (Jupyter-style) -->
+          {% if step.inputs %}
+            <div class="section-label">
+              <i class="bi bi-arrow-right-circle" style="color: #007bff;"></i> Input Values
+            </div>
+            <div class="input-values-grid">
+              {% for input in step.inputs %}
+                <div class="input-value-card">
+                  <div class="input-value-label">${{ input.label }}$</div>
+                  <div class="input-value-content">
+                    <span class="input-value-number">{{ input.value|floatformat:2 }}</span>
+                    <span class="input-value-unit">{{ input.unit }}</span>
+                  </div>
+                  {% if input.source %}
+                    <div class="input-value-source">{{ input.source }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Formula (Generic Definition) -->
+          {% if step.formula %}
+            <div class="section-label">
+              <i class="bi bi-formulae" style="color: #007bff;"></i> Formula Definition
+            </div>
+            <div class="jupyter-formula definition">
+              $${{ step.formula }}$$
+            </div>
+          {% endif %}
+
+          <!-- Substitution (Values Plugged In) -->
+          {% if step.substitution %}
+            <div class="section-label">
+              <i class="bi bi-arrow-right" style="color: #ffa500;"></i> Substitution &amp; Calculation
+            </div>
+            <div class="jupyter-formula substitution">
+              $${{ step.substitution }}$$
+            </div>
+          {% endif %}
+
+          <!-- Sub-steps (for torque section) -->
+          {% if step.sub_steps %}
+            <div class="section-label">
+              <i class="bi bi-list-nested" style="color: #28a745;"></i> Sub-Calculations
+            </div>
+            {% for substep in step.sub_steps %}
+              <div style="margin-bottom: 1.5rem;">
+                <div class="jupyter-formula definition" style="margin-bottom: 0.8rem;">
+                  $${{ substep.formula }}$$
+                </div>
+                {% if substep.substitution %}
+                  <div class="jupyter-formula substitution">
+                    $${{ substep.substitution }}$$
+                  </div>
+                {% endif %}
+                <div style="text-align: center; padding: 0.8rem; background: #e8f5e9; border-radius: 4px; color: #28a745; font-weight: 600; font-family: 'Courier New', monospace;">
+                  → {{ substep.output }} Nm
                 </div>
               </div>
-            {% endif %}
+            {% endfor %}
+          {% endif %}
 
-            <!-- Formula (Generic Definition) -->
-            {% if step.formula %}
-              <div class="mb-3">
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-formulae"></i> Formula
-                </h6>
-                <div style="background: #f0f8ff; padding: 1rem; border-radius: 4px; border-left: 4px solid #0056b3;">
-                  <div style="font-size: 1.05rem; text-align: center;">
-                    $${{ step.formula }}$$
-                  </div>
+          <!-- Output Value (Result) -->
+          {% if step.output %}
+            <div class="section-label">
+              <i class="bi bi-check-circle" style="color: #28a745;"></i> Result
+            </div>
+            <div class="jupyter-formula result">
+              <div style="text-align: center; width: 100%;">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">${{ step.output.label }}$</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: #28a745; font-family: 'Courier New', monospace;">
+                  {% if step.output.value %}{{ step.output.value|floatformat:2 }}{% else %}N/A{% endif %}
                 </div>
+                <div style="font-size: 0.95rem; color: #999; margin-top: 0.3rem;">{{ step.output.unit }}</div>
               </div>
-            {% endif %}
+            </div>
+          {% endif %}
 
-            <!-- Substitution (Values Plugged In) -->
-            {% if step.substitution %}
-              <div class="mb-3">
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-arrow-right"></i> Substitution &amp; Calculation
-                </h6>
-                <div style="background: #fffbf0; padding: 1rem; border-radius: 4px; border-left: 4px solid #fd7e14;">
-                  <div style="font-size: 1.0rem; text-align: center;">
-                    $${{ step.substitution }}$$
-                  </div>
-                </div>
-              </div>
-            {% endif %}
+          <!-- Constraints/Validation -->
+          {% if step.constraints %}
+            <div class="section-label" style="margin-top: 1.5rem;">
+              <i class="bi bi-exclamation-circle" style="color: #ffc107;"></i> Validation Constraints
+            </div>
+            <ul style="margin: 0; padding-left: 1.5rem; list-style: none;">
+              {% for constraint in step.constraints %}
+                <li style="padding: 0.5rem 0; color: #555; display: flex; align-items: baseline;">
+                  <i class="bi bi-check-lg" style="color: #28a745; margin-right: 0.5rem; flex-shrink: 0;"></i>
+                  {{ constraint|safe }}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
 
-            <!-- Sub-steps (for torque section) -->
-            {% if step.sub_steps %}
-              <div class="mb-3">
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-list-nested"></i> Sub-Calculations
-                </h6>
-                {% for substep in step.sub_steps %}
-                  <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 0.8rem; border-left: 3px solid #28a745;">
-                    <div style="font-size: 0.9rem; margin-bottom: 0.8rem; text-align: center;">
-                      $${{ substep.formula }}$$
-                    </div>
-                    {% if substep.substitution %}
-                      <div style="background: #fffbf0; padding: 0.7rem; border-radius: 3px; margin-bottom: 0.5rem; border-left: 3px solid #fd7e14; font-size: 0.85rem; text-align: center;">
-                        $${{ substep.substitution }}$$
-                      </div>
-                    {% endif %}
-                    <div style="background: white; padding: 0.5rem; border-radius: 3px; font-weight: 600; color: #0056b3; font-family: 'Courier New', monospace; font-size: 0.9rem;">
-                      → {{ substep.output }} Nm
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            {% endif %}
-
-            <!-- Output Value -->
-            {% if step.output %}
-              <div class="mb-3">
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-check-circle"></i> Result
-                </h6>
-                <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px; border-left: 4px solid #0056b3;">
-                  <div style="font-family: 'Courier New', monospace; font-weight: 600; color: #0056b3; font-size: 1.1rem;">
-                    {{ step.output.label }}:
-                    <span style="font-size: 1.3rem;">
-                      {% if step.output.value %}{{ step.output.value|floatformat:2 }}{% else %}N/A{% endif %}
-                    </span>
-                    <span style="color: #666; margin-left: 0.3rem;">{{ step.output.unit }}</span>
-                  </div>
-                </div>
-              </div>
-            {% endif %}
-
-            <!-- Constraints/Validation -->
-            {% if step.constraints %}
-              <div>
-                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
-                  <i class="bi bi-exclamation-circle"></i> Validation
-                </h6>
-                <ul style="margin: 0; padding-left: 1.5rem;">
-                  {% for constraint in step.constraints %}
-                    <li style="padding: 0.3rem 0; color: #555;">{{ constraint|safe }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-            {% endif %}
-
-          </div>
         </div>
       {% endfor %}
 
