@@ -16,6 +16,8 @@ from .engine import (
     CRANE_PF_XXL,
     KNOWN_MOTORS,
     PHYSICAL_REQUIREMENTS,
+    MECHANICAL_INTERFACE,
+    DERIVED_LIMITS,
     TORQUE_CONSTANT,
     ETA_GB_ASSUMED,
     SAFETY_FACTOR,
@@ -27,14 +29,45 @@ from .pdf_parser import (
 )
 
 FORMULAS = {
+    # Nomenclature: Combined Factor
     'f_CF':    r'CF = i_{\text{slew}} \times \eta_{\text{slew}}',
+
+    # F1–F10: Core formula reference (aligned with engine.py and notebook §3)
     'f1':      r'T_{GM,start,MAX} = \dfrac{T_{crane,lim}}{CF}',
+    'f1_label': 'Maximum permissible GM starting torque',
+
     'f2':      r'T_{GM,nom,req} = \dfrac{T_{crane,nom}}{CF}',
+    'f2_label': 'Required GM nominal torque',
+
+    'f3':      r'CF = i_{\text{slew}} \times \eta_{\text{slew}}',
+    'f3_label': 'Combined factor',
+
+    'f4':      r'n_{crane} = \dfrac{n_{GM,out}}{i_{\text{slew}}}',
+    'f4_label': 'Crane slewing speed',
+
+    'f5':      r'M_{\text{nenn}} = T_{GM,out,nom} \times CF',
+    'f5_label': 'Nominal ring torque',
+
+    'f6':      r'M_{a,max} = T_{GM,out,start} \times CF',
+    'f6_label': 'Starting ring torque (CRITICAL)',
+
+    'f7':      r'M_{k,max} = M_{\text{nenn}} \times \dfrac{M_k}{M_n}',
+    'f7_label': 'Peak ring torque',
+
     'f8':      r'M_{n,motor} = \dfrac{P_{kW} \times 9550}{n_{motor}}',
+    'f8_label': 'Motor rated torque',
     'f8_note': r'9550 \approx \dfrac{60{,}000}{2\pi} \text{ — converts kW\cdotRPM to Nm}',
-    'f4':      r'i_{gb} = \dfrac{n_{motor}}{n_{GM,out}}',
+
+    'f9':      r'i_{gb} = \dfrac{n_{motor}}{n_{GM,out}}',
+    'f9_label': 'Gearbox ratio',
+
+    'f10':     r'\left(\dfrac{M_a}{M_n}\right)_{MAX} = \dfrac{T_{GM,start,MAX}}{T_{GM,out,nom}}',
+    'f10_label': 'Maximum permissible starting factor',
+
+    # Helper formulas
     'f4_inv':  r'n_{GM,out} = \dfrac{n_{motor}}{i_{gb}}',
-    'f5':      r'n_{crane} = \dfrac{n_{GM,out}}{i_{slew}}',
+    'f4_inv_label': 'GM output speed (from gearbox ratio)',
+
     'f_MNenn': r'M_{Nenn} = T_{GM,out,nom} \times CF',
     'f_MaMax': r'M_{a,Max} = T_{GM,out,start} \times CF',
     'f_MkMax': r'M_{k,Max} = M_{Nenn} \times \left(\dfrac{M_k}{M_n}\right)',
@@ -90,8 +123,10 @@ def _crane_context():
     ctx = {}
     for ctype, params in CRANE_PARAMS.items():
         ctx[f'params_{ctype}'] = params
+        ctx[f'limits_{ctype}'] = DERIVED_LIMITS.get(ctype, {})
     ctx['crane_standard_pf'] = CRANE_STANDARD_PF
     ctx['crane_pf_xxl']      = CRANE_PF_XXL
+    ctx['mechanical_interface'] = MECHANICAL_INTERFACE
     return ctx
 
 
@@ -177,28 +212,6 @@ def calculator(request):
 
 def index(request):
     return calculator(request)
-
-
-def requirements(request):
-    reference = {k: size_known_motor(k) for k in KNOWN_MOTORS}
-    req_tables = {}
-    for ctype, params in CRANE_PARAMS.items():
-        CF             = params['i_slew'] * params['eta_slew']
-        req_tables[ctype] = {
-            'params':          params,
-            'CF':              CF,
-            'T_gm_start_MAX':  params['T_crane_lim'] / CF,
-            'T_gm_nom_req':    params['T_crane_nom']  / CF,
-            'n_gm_min':        params['n_crane_min'] * params['i_slew'],
-            'n_gm_max':        params['n_crane_max'] * params['i_slew'],
-            'Ma_Mn_MAX':       (params['T_crane_lim'] / CF) / (params['T_crane_nom'] / CF),
-        }
-    context = {
-        'req_tables': req_tables, 'reference': reference,
-        'known_motors': KNOWN_MOTORS, 'phys_requirements': PHYSICAL_REQUIREMENTS,
-        **FORMULAS, **_crane_context(),
-    }
-    return render(request, 'calculator/requirements.html', context)
 
 
 @csrf_exempt
@@ -510,63 +523,82 @@ def formulas(request):
 
 
 def requirements(request):
-    M_MAX = 62_000   # Nm — max crane slewing torque (fixed design basis)
-    I_WORM = 150     # worm gear ratio (fixed)
-    N_MOTOR = 1450   # rpm — 4-pole 50 Hz (standard selection)
-    N_MOTOR_6P = 960 # rpm — 6-pole 50 Hz (alternative)
-
+    # Derive requirements for each crane type using CRANE_PARAMS and DERIVED_LIMITS
     IEC_POWERS = [0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3.0, 4.0, 5.5, 7.5]
 
     def next_iec(p):
         return next((x for x in IEC_POWERS if x >= p), None)
 
-    ETA_BEVEL = 0.95  # bevel gearbox efficiency applied in Step 6
+    ETA_BEVEL = ETA_GB_ASSUMED  # 0.90 — bevel gearbox efficiency
 
-    def _row(eta, n_slew, ma_mn):
-        ng = round(n_slew * I_WORM, 2)
-        M2 = M_MAX / (I_WORM * eta)
-        ib = N_MOTOR / ng
-        Mr = M2 / (ib * ETA_BEVEL)   # Step 6: includes bevel efficiency
-        Mn = Mr / ma_mn
-        P  = Mn * N_MOTOR / 9550
-        M_start = Mn * ma_mn
-        return {
-            'eta': eta, 'n_slew': n_slew, 'ma_mn': ma_mn,
-            'M2_max':      round(M2, 1),
-            'n_gear_out':  round(ng, 1),
-            'i_bevel':     round(ib, 2),
-            'M_motor_req': round(Mr, 1),
-            'M_n':         round(Mn, 1),
-            'M_start':     round(M_start, 1),
-            'P_req':       round(P, 3),
-            'P_iec':       next_iec(P),
-            'ok':          round(M_start, 1) >= round(Mr, 1),
+    # Build requirements tables for both PF Standard and PF-XXL
+    req_tables = {}
+    for crane_type, params in CRANE_PARAMS.items():
+        limits = DERIVED_LIMITS.get(crane_type, {})
+        CF = limits.get('CF', params['i_slew'] * params['eta_slew'])
+        T_gm_nom_req = limits.get('T_gm_nom_required', params['T_crane_nom'] / CF)
+
+        # Sample calculation with typical values (4-pole 1450 rpm motor)
+        N_MOTOR = 1450 if crane_type == CRANE_STANDARD_PF else 1450
+
+        def _row(eta, n_slew, ma_mn, i_slew):
+            ng = round(n_slew * i_slew, 2)
+            if ng == 0: return None
+            M2 = params['T_crane_nom'] / (i_slew * eta)
+            ib = N_MOTOR / ng if ng else 0
+            Mr = M2 / (ib * ETA_BEVEL) if ib else 0
+            Mn = Mr / ma_mn if ma_mn else 0
+            P  = Mn * N_MOTOR / 9550 if N_MOTOR else 0
+            M_start = Mn * ma_mn
+            return {
+                'eta': eta, 'n_slew': n_slew, 'ma_mn': ma_mn,
+                'M2_nom':      round(M2, 1),
+                'n_gear_out':  round(ng, 1),
+                'i_bevel':     round(ib, 2),
+                'M_motor_req': round(Mr, 1),
+                'M_n':         round(Mn, 1),
+                'M_start':     round(M_start, 1),
+                'P_req':       round(P, 3),
+                'P_iec':       next_iec(P),
+                'ok':          round(M_start, 1) >= round(Mr, 1),
+            }
+
+        # Summary boundary cases (typical PF operating envelope)
+        typical = _row(0.40, params.get('n_crane_min', 0.2) + 0.1, 3.4, params['i_slew'])
+
+        # Full sizing matrix (η × n_slew, Ma/Mn fixed at 3.4)
+        matrix = [
+            _row(eta, n_slew, 3.4, params['i_slew'])
+            for eta in [0.35, 0.40, 0.45]
+            for n_slew in [params.get('n_crane_min', 0.2), 0.3, params.get('n_crane_max', 1.0)]
+        ]
+        matrix = [row for row in matrix if row is not None]
+
+        req_tables[crane_type] = {
+            'label': params['label'],
+            'params': params,
+            'limits': limits,
+            'CF': CF,
+            'T_gm_nom_required': round(T_gm_nom_req, 1),
+            'typical': typical,
+            'matrix': matrix,
+            'N_MOTOR': N_MOTOR,
+            'ETA_BEVEL': ETA_BEVEL,
         }
 
-    # Summary boundary cases (basis: η=0.35–0.45, n_slew=0.25–0.35 rpm)
-    worst = _row(0.35, 0.35, 3.0)   # worst: low η, high slew speed, low Ma/Mn
-    best  = _row(0.45, 0.25, 3.5)   # best:  high η, low slew speed, high Ma/Mn
-    typ   = _row(0.40, 0.30, 3.4)   # typical PF crane operating point
-
-    # Full sizing matrix (η × n_slew, Ma/Mn fixed at 3.4)
-    matrix = [
-        _row(eta, n_slew, 3.4)
-        for eta in [0.30, 0.35, 0.40, 0.45, 0.50]
-        for n_slew in [0.25, 0.30, 0.35]
-    ]
-
-    # Gearbox sizing torque for typical case (load spectrum method, M_nom≈40% of M_max)
-    M2_typ_nom = typ['M2_max'] * 0.40
-    gb_soll_typ = round(M2_typ_nom * SAFETY_FACTOR, 1)
+    # Reference motor examples
+    reference = {k: size_known_motor(k) for k in KNOWN_MOTORS}
 
     context = {
-        'M_MAX': M_MAX, 'I_WORM': I_WORM, 'N_MOTOR': N_MOTOR, 'N_MOTOR_6P': N_MOTOR_6P,
-        'SF': SAFETY_FACTOR, 'ETA_BEVEL': ETA_BEVEL,
-        'worst': worst, 'best': best, 'typ': typ,
-        'matrix': matrix,
-        'gb_soll_typ': gb_soll_typ,
+        'req_tables': req_tables,
+        'reference': reference,
+        'known_motors': KNOWN_MOTORS,
+        'phys_requirements': PHYSICAL_REQUIREMENTS,
+        'crane_standard_pf': CRANE_STANDARD_PF,
+        'crane_pf_xxl': CRANE_PF_XXL,
+        'SF': SAFETY_FACTOR,
         'active_page': 'requirements',
-        **FORMULAS,
+        **FORMULAS, **_crane_context(),
     }
     return render(request, 'calculator/requirements.html', context)
 

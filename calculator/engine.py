@@ -27,22 +27,48 @@ CRANE_PF_XXL      = 'pf_xxl'
 
 CRANE_PARAMS = {
     CRANE_STANDARD_PF: {
-        'i_slew':      121,
-        'eta_slew':    0.40,
-        'T_crane_lim': 41190,
-        'T_crane_nom': 15360,
-        'n_crane_min': 0.2,
-        'n_crane_max': 1.0,
-        'label':       'Standard PF',
+        'i_slew':        121,
+        'eta_slew':      0.40,
+        'T_crane_lim':   41190,
+        'T_crane_nom':   15360,
+        'n_crane_min':   0.2,
+        'n_crane_max':   1.0,
+        'n_gm_min':      24,      # Derived: n_crane_min * i_slew = 0.2 * 121
+        'n_gm_max':      121,     # Derived: n_crane_max * i_slew = 1.0 * 121
+        'label':         'Standard PF (ELW 597EM)',
     },
     CRANE_PF_XXL: {
-        'i_slew':      150,
-        'eta_slew':    0.40,
-        'T_crane_lim': 62000,
-        'T_crane_nom': 23400,
-        'n_crane_min': 0.2,
-        'n_crane_max': 1.0,
-        'label':       'PF-XXL',
+        'i_slew':        150,
+        'eta_slew':      0.40,
+        'T_crane_lim':   62000,
+        'T_crane_nom':   23400,
+        'n_crane_min':   0.2,
+        'n_crane_max':   1.0,
+        'n_gm_min':      30,      # Derived: n_crane_min * i_slew = 0.2 * 150
+        'n_gm_max':      150,     # Derived: n_crane_max * i_slew = 1.0 * 150
+        'label':         'PF-XXL (TGB P26-04)',
+    },
+}
+
+# Derived supplier limits from CRANE_PARAMS (§4 of specification)
+DERIVED_LIMITS = {
+    CRANE_STANDARD_PF: {
+        'CF':                       48.4,         # i_slew × η_slew
+        'T_gm_nom_required':        317,          # T_crane_nom / CF
+        'T_gm_start_MAX':           851,          # T_crane_lim / CF
+        'T_gm_pullup_min':          286,          # 0.9 × T_gm_nom_required
+        'n_gm_min':                 24,
+        'n_gm_max':                 121,
+        'Ma_Mn_max':                2.69,         # T_gm_start_MAX / T_gm_nom_required
+    },
+    CRANE_PF_XXL: {
+        'CF':                       60.0,         # i_slew × η_slew
+        'T_gm_nom_required':        390,          # T_crane_nom / CF
+        'T_gm_start_MAX':           1033,         # T_crane_lim / CF
+        'T_gm_pullup_min':          351,          # 0.9 × T_gm_nom_required
+        'n_gm_min':                 30,
+        'n_gm_max':                 150,
+        'Ma_Mn_max':                2.65,         # T_gm_start_MAX / T_gm_nom_required
     },
 }
 
@@ -113,7 +139,7 @@ PHYSICAL_REQUIREMENTS = {
     'motor_type':             {'label': 'Motor type',                     'required': 'Squirrel cage asynchronous helical bevel gearmotor — marine execution',    'note': 'Must be helical bevel, NOT worm. Marine execution required.'},
     'frame_material':         {'label': 'Frame / housing material',        'required': 'Cast Iron (GJL / GG)',                                                     'note': 'Aluminium not acceptable for offshore C5H.'},
     'input_flange':           {'label': 'Input flange',                    'required': 'Round IEC — Ø165 mm bolt circle (IEC 90 B5)',                              'note': 'Direct mounting. Bolt circle diameter 165 mm.'},
-    'output_flange':          {'label': 'Output flange',                   'required': 'Square IEC — Ø200 mm',                                                    'note': 'Gearbox output side. Adapter to Ø165 mm slewing drive input.'},
+    'output_flange':          {'label': 'Output flange',                   'required': 'Square IEC — Ø200 mm',                                                    'note': 'Bevel gearbox output side. Connects via adapter flange (Ø200→Ø165) to slewing drive.'},
     'output_shaft':           {'label': 'Output shaft',                    'required': 'Ø32 k6 x 50 mm from flange surface — DIN 6885.1 keyway',                  'note': 'Tolerance k6. Length from flange surface.'},
     'cooling_method':         {'label': 'Cooling method',                  'required': 'IC410 TENV — totally enclosed non-ventilated, no shaft fan',               'note': 'IC411 fan-cooled NOT acceptable.'},
     'ip_rating':              {'label': 'IP protection class',             'required': 'IP66 minimum',                                                            'note': 'IP67/68 also acceptable. IP65 NOT sufficient.'},
@@ -132,6 +158,24 @@ PHYSICAL_REQUIREMENTS = {
     'fasteners':              {'label': 'All fasteners',                   'required': 'Stainless steel A4',                                                      'note': 'Motor and gearbox fasteners both.'},
     'shaft_seal':             {'label': 'Shaft seal material',             'required': 'FPM (Viton) — preferred',                                                 'note': 'For -20 to +120 deg C and offshore chemical resistance.'},
     'nameplate':              {'label': 'Nameplate',                       'required': 'Stainless steel — mounted with stainless rivets or screws',                'note': 'Must include all voltage specs and certification marks.'},
+}
+
+MECHANICAL_INTERFACE = {
+    'description': 'PF-NG crane mechanical interface — fixed constraints',
+    'motor_side': {
+        'frame': 'IEC 90 B5',
+        'nominal_flange_mm': 160,
+        'bolt_circle_mm': 165,
+        'output_shaft': 'Ø32k6 × 50 mm',
+        'frame_material': 'Cast Iron (GJL / GG)',
+    },
+    'gearbox_drive_side': {
+        'gearbox_input': 'IEC 90 B5 · Ø165 mm bolt circle',
+        'gearbox_output_flange_mm': 200,
+        'adapter_flange': 'Ø200 mm → Ø165 mm',
+        'slewing_drive_input_mm': 165,
+        'note': 'The Ø200 mm square flange belongs to the bevel gearbox output shaft. It connects through an adapter flange before reaching the Ø165 mm slewing drive interface.',
+    },
 }
 
 
