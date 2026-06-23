@@ -33,8 +33,10 @@ CRANE_PARAMS = {
         'T_crane_nom':   15360,
         'n_crane_min':   0.2,
         'n_crane_max':   1.0,
-        'n_gm_min':      24,      # Derived: n_crane_min * i_slew = 0.2 * 121
-        'n_gm_max':      121,     # Derived: n_crane_max * i_slew = 1.0 * 121
+        'n_gm_min':      30,      # Design window (Excel: "Set so GM out speed = 30–60 rpm")
+        'n_gm_max':      60,      # Design window (vs theoretical 24–121 based on slew limits)
+        'n_gm_theoretical_min': 24,  # Theoretical: n_crane_min * i_slew = 0.2 * 121
+        'n_gm_theoretical_max': 121, # Theoretical: n_crane_max * i_slew = 1.0 * 121
         'label':         'Standard PF (ELW 597EM)',
     },
     CRANE_PF_XXL: {
@@ -87,9 +89,9 @@ KNOWN_MOTORS = {
         'i_gb':             27.82,
         'gm_out_speed_rpm': 51,
         'gm_out_nom_nm':    141,
-        'gm_out_start_nm':  295,
-        'gm_out_pullup_nm': 295,  # stated in datasheet
-        'Mk_Mn':            3.40,
+        'gm_out_start_nm':  353.3,  # locked-rotor / breakaway torque (12.7 Nm × 27.82)
+        'gm_out_pullup_nm': 295.0,  # acceleration / pull-up torque (10.6 Nm × 27.82)
+        'Mk_Mn':            2.60,   # T_gb,peak / T_gb,nom = 367.2 / 141 = 2.60
     },
     'watt_110': {
         'label':            'Watt Drive EP2557M — 1.1 kW',
@@ -101,9 +103,9 @@ KNOWN_MOTORS = {
         'i_gb':             27.82,
         'gm_out_speed_rpm': 51,
         'gm_out_nom_nm':    141,
-        'gm_out_start_nm':  295,
-        'gm_out_pullup_nm': 295,  # stated in datasheet
-        'Mk_Mn':            3.40,
+        'gm_out_start_nm':  295.0,  # Per notebook §5 (locked-rotor torque)
+        'gm_out_pullup_nm': 295.0,  # stated in datasheet
+        'Mk_Mn':            3.40,   # Per notebook §5
     },
     'zsystems_v1': {
         'label':            'Z:systems ZK33CV DM90-4 TS P2 — V1',
