@@ -137,67 +137,55 @@
   <div class="sidebar-section">Navigation</div>
 
   <a href="{% url 'index' %}"
-     class="sidebar-link {% if active_page == 'calculator' %}active{% endif %}">
-    <i class="bi bi-calculator"></i> Calculator
+     class="sidebar-link {% if active_page == 'index' %}active{% endif %}">
+    <i class="bi bi-house"></i> Home
   </a>
 
-  <a href="{% url 'upload_datasheet' %}"
-     class="sidebar-link {% if active_page == 'upload' %}active{% endif %}">
-    <i class="bi bi-filetype-pdf"></i> Datasheet Import
+  <div class="sidebar-section">Motor Validation</div>
+
+  <a href="{% url 'motor_list' 'standard_pf' %}"
+     class="sidebar-link {% if active_page == 'motor_list' %}active{% endif %}">
+    <i class="bi bi-crane"></i> PF Standard
   </a>
+
+  <a href="{% url 'motor_list' 'pf_xxl' %}"
+     class="sidebar-link {% if active_page == 'motor_list' %}active{% endif %}">
+    <i class="bi bi-arrows-fullscreen"></i> PF-XXL
+  </a>
+
+  <div class="sidebar-section">Formulas & Tools</div>
+
+  <a href="{% url 'formulas' %}"
+     class="sidebar-link {% if active_page == 'formulas' %}active{% endif %}">
+    <i class="bi bi-journal-code"></i> Overview
+  </a>
+
+  <a href="{% url 'formula_reference' %}"
+     class="sidebar-link {% if active_page == 'formula_reference' %}active{% endif %}">
+    <i class="bi bi-formulae"></i> Reference
+  </a>
+
+  <a href="{% url 'formula_verifier' %}"
+     class="sidebar-link {% if active_page == 'formula_verifier' %}active{% endif %}">
+    <i class="bi bi-calculator-lg"></i> Verifier
+  </a>
+
+  <a href="{% url 'acceptance_ranges' %}"
+     class="sidebar-link {% if active_page == 'acceptance_ranges' %}active{% endif %}">
+    <i class="bi bi-list-check"></i> Acceptance Ranges
+  </a>
+
+  <div class="sidebar-section">Analysis</div>
 
   <a href="{% url 'comparison' %}"
      class="sidebar-link {% if active_page == 'comparison' %}active{% endif %}">
-    <i class="bi bi-table"></i> Motor Comparison
+    <i class="bi bi-diagram-3"></i> Motor Comparison
   </a>
 
   <a href="{% url 'requirements' %}"
      class="sidebar-link {% if active_page == 'requirements' %}active{% endif %}">
-    <i class="bi bi-file-earmark-ruled"></i> Motor Requirements
+    <i class="bi bi-file-earmark-ruled"></i> System Requirements
   </a>
-
-  <a href="{% url 'formulas' %}"
-     class="sidebar-link {% if active_page == 'formulas' %}active{% endif %}">
-    <i class="bi bi-journal-code"></i> Formula Reference
-  </a>
-
-  <a href="{% url 'torque_curve' %}"
-     class="sidebar-link {% if request.resolver_match.url_name == 'torque_curve' %}active{% endif %}">
-    <i class="bi bi-graph-up-arrow"></i> Torque-Speed Curve
-  </a>
-
-  <a href="{% url 'motors:list' %}"
-     class="sidebar-link {% if active_page == 'motors' %}active{% endif %}">
-    <i class="bi bi-diagram-3"></i> Supplier Motors
-  </a>
-
-  <div class="sidebar-section">Saved Suppliers
-    <span class="badge bg-secondary ms-1" style="font-size:.6rem">{{ sidebar_calculations|length }}</span>
-  </div>
-
-  <a href="{% url 'suppliers_standard_pf' %}"
-     class="sidebar-link {% if crane_filter == 'standard_pf' %}active{% endif %}">
-    <i class="bi bi-crane"></i> Standard PF Crane
-    <span class="badge bg-secondary ms-auto" style="font-size:.6rem">{{ sidebar_standard_count }}</span>
-  </a>
-
-  <a href="{% url 'suppliers_pf_xxl' %}"
-     class="sidebar-link {% if crane_filter == 'pf_xxl' %}active{% endif %}">
-    <i class="bi bi-arrows-fullscreen"></i> PF-XXL
-    <span class="badge bg-secondary ms-auto" style="font-size:.6rem">{{ sidebar_xxl_count }}</span>
-  </a>
-
-  {% for sc in sidebar_calculations %}
-  <a href="{% url 'supplier_detail' sc.pk %}"
-     class="sidebar-sub-link {% if request.resolver_match.kwargs.pk == sc.pk %}fw-semibold text-white{% endif %}">
-    {% if sc.torque_check == 'OK' %}<span class="badge badge-ok-sm me-1">✓</span>
-    {% elif sc.torque_check == 'Marginal' %}<span class="badge badge-marginal-sm me-1">!</span>
-    {% else %}<span class="badge badge-fail-sm me-1">✗</span>{% endif %}
-    {{ sc.supplier_name }}
-  </a>
-  {% empty %}
-  <span class="sidebar-sub-link text-muted fst-italic">No saved calculations yet</span>
-  {% endfor %}
 
 </nav>
 
