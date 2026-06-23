@@ -319,6 +319,7 @@ def formula_verifier(request):
     result = None
     ring_system = None
     calculation_steps = None
+    formula_displays = {}
 
     if request.method == 'POST':
         system_type = request.POST.get('system_type', 'standard_pf')
@@ -367,7 +368,6 @@ def formula_verifier(request):
             }
         except (ValueError, TypeError) as e:
             result = {'error': f'Invalid input: {str(e)}'}
-            formula_displays = {}
 
     return render(request, 'calculator/formula_verifier.html', {
         'ring_systems': ring_systems,
