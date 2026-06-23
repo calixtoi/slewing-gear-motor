@@ -163,6 +163,119 @@
     </button>
   </form>
 
+  <!-- Step-by-Step Calculation -->
+  {% if calculation_steps %}
+    <hr class="my-4">
+    <div class="result-section">
+      <h6 class="mb-4"><i class="bi bi-diagram-3"></i> Step-by-Step Calculation Breakdown</h6>
+
+      {% for step in calculation_steps %}
+        <div class="card mb-3">
+          <div class="card-header" style="background: linear-gradient(90deg, #007bff, #0056b3); color: white;">
+            <strong>Step {{ step.number }}: {{ step.title }}</strong>
+            <small class="d-block" style="opacity: 0.9;">{{ step.description }}</small>
+          </div>
+          <div class="card-body">
+
+            <!-- Input Values -->
+            {% if step.inputs %}
+              <div class="mb-3">
+                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                  <i class="bi bi-arrow-right-circle"></i> Input Values
+                </h6>
+                <div class="row">
+                  {% for input in step.inputs %}
+                    <div class="col-md-6 col-lg-4 mb-2">
+                      <div style="background: #f8f9fa; padding: 0.8rem; border-radius: 4px; border-left: 3px solid #007bff;">
+                        <div style="font-family: 'Courier New', monospace; font-weight: 600; color: #0056b3;">
+                          ${{ input.label }}$
+                        </div>
+                        <div style="font-weight: 700; font-size: 1.1rem; color: #333;">
+                          {{ input.value|floatformat:2 }}
+                          <span style="font-size: 0.85rem; color: #666; margin-left: 0.3rem;">{{ input.unit }}</span>
+                        </div>
+                        {% if input.source %}
+                          <small style="color: #999;">{{ input.source }}</small>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Formula -->
+            {% if step.formula %}
+              <div class="mb-3">
+                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                  <i class="bi bi-formulae"></i> Formula Application
+                </h6>
+                <div style="background: #f0f8ff; padding: 1rem; border-radius: 4px; border-left: 4px solid #0056b3;">
+                  <div style="font-size: 1.05rem;">
+                    $${{ step.formula }}$$
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Sub-steps (for torque section) -->
+            {% if step.sub_steps %}
+              <div class="mb-3">
+                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                  <i class="bi bi-list-nested"></i> Sub-Calculations
+                </h6>
+                {% for substep in step.sub_steps %}
+                  <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 0.8rem; border-left: 3px solid #28a745;">
+                    <div style="font-size: 0.95rem; margin-bottom: 0.5rem;">
+                      $${{ substep.formula }}$$
+                    </div>
+                    <div style="background: white; padding: 0.5rem; border-radius: 3px; font-weight: 600; color: #0056b3; font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                      → {{ substep.output }}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <!-- Output Value -->
+            {% if step.output %}
+              <div class="mb-3">
+                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                  <i class="bi bi-check-circle"></i> Result
+                </h6>
+                <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px; border-left: 4px solid #0056b3;">
+                  <div style="font-family: 'Courier New', monospace; font-weight: 600; color: #0056b3; font-size: 1.1rem;">
+                    {{ step.output.label }}:
+                    <span style="font-size: 1.3rem;">
+                      {% if step.output.value %}{{ step.output.value|floatformat:2 }}{% else %}N/A{% endif %}
+                    </span>
+                    <span style="color: #666; margin-left: 0.3rem;">{{ step.output.unit }}</span>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Constraints/Validation -->
+            {% if step.constraints %}
+              <div>
+                <h6 style="color: #333; font-weight: 600; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.5rem;">
+                  <i class="bi bi-exclamation-circle"></i> Validation
+                </h6>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                  {% for constraint in step.constraints %}
+                    <li style="padding: 0.3rem 0; color: #555;">{{ constraint|safe }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+  {% endif %}
+
   <!-- Results Section -->
   {% if result %}
     {% if result.error %}

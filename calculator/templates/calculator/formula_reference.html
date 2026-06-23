@@ -1,0 +1,517 @@
+{% extends 'calculator/base.html' %}
+
+{% block content %}
+<style>
+  .formula-header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+  .formula-header h2 { margin: 0; font-weight: 700; }
+
+  .formula-section { background: white; border-radius: 8px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #007bff; }
+
+  .formula-title { font-size: 1.3rem; font-weight: 700; color: #0056b3; margin-bottom: 1rem; }
+  .formula-description { color: #555; margin-bottom: 1.5rem; line-height: 1.6; }
+
+  .formula-box { background: #f8f9fa; padding: 2rem; border-radius: 4px; margin: 1.5rem 0; border: 2px solid #e0e0e0; }
+  .formula-box .katex-display { margin: 1rem 0; }
+
+  .variables-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  .variables-table th { background: #f0f0f0; font-weight: 600; padding: 0.8rem; text-align: left; border-bottom: 2px solid #007bff; }
+  .variables-table td { padding: 0.8rem; border-bottom: 1px solid #e0e0e0; }
+  .variables-table .var-symbol { font-family: 'Courier New', monospace; color: #0056b3; font-weight: 600; }
+
+  .note-box { background: #e7f3ff; border-left: 4px solid #0056b3; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+  .note-box strong { color: #0056b3; }
+
+  .constraint-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+  .constraint-box strong { color: #856404; }
+
+  .value-box { background: #e8f5e9; border-left: 4px solid #28a745; padding: 1rem; margin: 1rem 0; border-radius: 4px; font-family: 'Courier New', monospace; }
+
+  .formula-sequence { display: flex; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+  .formula-sequence .step { background: #007bff; color: white; padding: 0.5rem 1rem; border-radius: 4px; margin: 0.5rem; font-weight: 600; }
+  .formula-sequence .arrow { font-size: 1.5rem; color: #007bff; margin: 0 0.5rem; }
+
+  .toc { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+  .toc h5 { margin-top: 0; color: #0056b3; }
+  .toc ul { margin: 0; padding-left: 1.5rem; }
+  .toc li { margin: 0.5rem 0; }
+  .toc a { color: #0056b3; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .formula-grid .item { background: #f0f0f0; padding: 1rem; border-radius: 4px; text-align: center; }
+  .formula-grid .item .value { font-size: 1.2rem; font-weight: 700; color: #0056b3; font-family: 'Courier New', monospace; }
+  .formula-grid .item .label { color: #666; font-size: 0.85rem; margin-top: 0.5rem; }
+</style>
+
+<div class="formula-header">
+  <h2><i class="bi bi-formulae"></i> Complete Formula Reference</h2>
+  <p class="mb-0">Step-by-step mathematical framework for motor validation (all formulas with detailed explanations)</p>
+</div>
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h5><i class="bi bi-list-nested"></i> Formulas Overview</h5>
+  <ul>
+    <li><a href="#combined-factor">Combined Factor (CF)</a></li>
+    <li><a href="#total-reduction">Total Reduction Ratio (i_tot)</a></li>
+    <li><a href="#gm-output-speed">GM Output Speed (n_gm)</a></li>
+    <li><a href="#slewing-speed">Crane Slewing Speed (n_slew)</a></li>
+    <li><a href="#power-consistency">Power Consistency (ΔP)</a></li>
+    <li><a href="#ring-nominal">Ring Nominal Torque (M_S2)</a></li>
+    <li><a href="#ring-pullup">Ring Pull-Up Torque (M_PU)</a></li>
+    <li><a href="#ring-start">Ring Start Torque (M_start)</a></li>
+    <li><a href="#ring-peak">Ring Peak Torque (M_peak)</a></li>
+    <li><a href="#gm-nom-required">Required GM Nominal Torque (T_gm,nom,req)</a></li>
+    <li><a href="#gm-start-max">Max GM Starting Torque (T_gm,start,max)</a></li>
+  </ul>
+</div>
+
+<!-- FORMULA 1: Combined Factor -->
+<div class="formula-section" id="combined-factor">
+  <div class="formula-title">1. Combined Factor (CF)</div>
+  <p class="formula-description">{{ formulas_data.combined_factor.description }}</p>
+
+  <div class="formula-box">
+    <div style="font-size: 1.3rem;">
+      $${{ formulas_data.combined_factor.latex }}$$
+    </div>
+  </div>
+
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Value / Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for var_symbol, description, source in formulas_data.combined_factor.variables %}
+        <tr>
+          <td><span class="var-symbol">${{ var_symbol }}$</span></td>
+          <td>{{ description }}</td>
+          <td>{{ source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="formula-grid">
+    {% for rs in ring_systems %}
+      <div class="item">
+        <div class="label">{{ rs.get_system_type_display }}</div>
+        <div class="value">{{ rs.CF }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="note-box">
+    <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.combined_factor.note }}
+  </div>
+</div>
+
+<!-- FORMULA 2: Total Reduction -->
+<div class="formula-section" id="total-reduction">
+  <div class="formula-title">2. Total Reduction Ratio</div>
+  <p class="formula-description">{{ formulas_data.total_reduction.description }}</p>
+
+  <div class="formula-box">
+    <div style="font-size: 1.3rem;">
+      $${{ formulas_data.total_reduction.latex }}$$
+    </div>
+  </div>
+
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for var_symbol, description, source in formulas_data.total_reduction.variables %}
+        <tr>
+          <td><span class="var-symbol">${{ var_symbol }}$</span></td>
+          <td>{{ description }}</td>
+          <td>{{ source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.total_reduction.note }}
+  </div>
+</div>
+
+<!-- FORMULA 3: GM Output Speed -->
+<div class="formula-section" id="gm-output-speed">
+  <div class="formula-title">3. GM Output Speed</div>
+  <p class="formula-description">{{ formulas_data.gm_output_speed.description }}</p>
+
+  <div class="formula-box">
+    <div style="font-size: 1.3rem;">
+      $${{ formulas_data.gm_output_speed.latex }}$$
+    </div>
+  </div>
+
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for var_symbol, description, source in formulas_data.gm_output_speed.variables %}
+        <tr>
+          <td><span class="var-symbol">${{ var_symbol }}$</span></td>
+          <td>{{ description }}</td>
+          <td>{{ source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="constraint-box">
+    <strong><i class="bi bi-exclamation-circle"></i> Constraints:</strong>
+    <ul class="mb-0">
+      {% for constraint in formulas_data.gm_output_speed.constraints %}
+        <li>{{ constraint }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="note-box">
+    <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.gm_output_speed.note }}
+  </div>
+</div>
+
+<!-- FORMULA 4: Crane Slewing Speed -->
+<div class="formula-section" id="slewing-speed">
+  <div class="formula-title">4. Crane Slewing Speed</div>
+  <p class="formula-description">{{ formulas_data.slewing_speed.description }}</p>
+
+  <div class="formula-box">
+    <div style="font-size: 1.3rem;">
+      $${{ formulas_data.slewing_speed.latex }}$$
+    </div>
+  </div>
+
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for var_symbol, description, source in formulas_data.slewing_speed.variables %}
+        <tr>
+          <td><span class="var-symbol">${{ var_symbol }}$</span></td>
+          <td>{{ description }}</td>
+          <td>{{ source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="constraint-box">
+    <strong><i class="bi bi-exclamation-circle"></i> Constraints:</strong>
+    <ul class="mb-0">
+      {% for constraint in formulas_data.slewing_speed.constraints %}
+        <li>{{ constraint }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="note-box">
+    <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.slewing_speed.note }}
+  </div>
+</div>
+
+<!-- FORMULA 5: Power Consistency -->
+<div class="formula-section" id="power-consistency">
+  <div class="formula-title">5. Power Consistency Check</div>
+  <p class="formula-description">{{ formulas_data.power_consistency.description }}</p>
+
+  <div class="formula-box">
+    <div style="font-size: 1.2rem;">
+      $${{ formulas_data.power_consistency.latex }}$$
+    </div>
+  </div>
+
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for var_symbol, description, source in formulas_data.power_consistency.variables %}
+        <tr>
+          <td><span class="var-symbol">${{ var_symbol }}$</span></td>
+          <td>{{ description }}</td>
+          <td>{{ source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="constraint-box">
+    <strong><i class="bi bi-exclamation-circle"></i> Requirement:</strong>
+    <ul class="mb-0">
+      {% for constraint in formulas_data.power_consistency.constraints %}
+        <li>{{ constraint }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="note-box">
+    <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.power_consistency.note }}
+  </div>
+</div>
+
+<!-- FORMULAS 6-9: Ring Torques -->
+<div class="formula-section" id="ring-torques">
+  <div class="formula-title">6–9. Ring Torques (GM Output Shaft × CF)</div>
+  <p class="formula-description">All motor torques at the GM output shaft are scaled by the combined factor (CF) to get ring-level torques.</p>
+
+  <!-- M_S2 -->
+  <div style="margin-bottom: 2rem;">
+    <h6><span class="var-symbol">$M_{S2}$</span> Ring Nominal Torque (ID 6)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.ring_nominal.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.ring_nominal.description }}</p>
+    <div class="note-box">
+      <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.ring_nominal.note }}
+    </div>
+  </div>
+
+  <!-- M_PU -->
+  <div style="margin-bottom: 2rem;">
+    <h6><span class="var-symbol">$M_{\\text{PU}}$</span> Ring Pull-Up Torque (ID 5)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.ring_pullup.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.ring_pullup.description }}</p>
+    <div class="constraint-box">
+      <strong><i class="bi bi-exclamation-circle"></i> Requirement:</strong>
+      <ul class="mb-0">
+        {% for constraint in formulas_data.ring_pullup.constraints %}
+          <li>{{ constraint }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="note-box">
+      <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.ring_pullup.note }}
+    </div>
+  </div>
+
+  <!-- M_start -->
+  <div style="margin-bottom: 2rem;">
+    <h6><span class="var-symbol">$M_{\\text{start}}$</span> Ring Start/Breakaway Torque (ID 6)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.ring_start.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.ring_start.description }}</p>
+    <div class="constraint-box">
+      <strong><i class="bi bi-exclamation-circle"></i> Critical Constraints:</strong>
+      <ul class="mb-0">
+        {% for constraint in formulas_data.ring_start.constraints %}
+          <li><strong>{{ constraint }}</strong></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="note-box" style="border-left-color: #dc3545; background: #ffe7e7;">
+      <strong><i class="bi bi-exclamation-triangle"></i> Critical Check:</strong> {{ formulas_data.ring_start.note }}
+    </div>
+  </div>
+
+  <!-- M_peak -->
+  <div>
+    <h6><span class="var-symbol">$M_{\\text{peak}}$</span> Ring Peak Torque (ID 7)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.ring_peak.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.ring_peak.description }}</p>
+    <div class="constraint-box">
+      <strong><i class="bi bi-exclamation-circle"></i> Requirement:</strong>
+      <ul class="mb-0">
+        {% for constraint in formulas_data.ring_peak.constraints %}
+          <li>{{ constraint }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="note-box">
+      <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.ring_peak.note }}
+    </div>
+  </div>
+</div>
+
+<!-- FORMULAS 10-11: Derived Limits -->
+<div class="formula-section" id="derived-limits">
+  <div class="formula-title">10–11. Derived Limits (Reverse Calculations)</div>
+  <p class="formula-description">Reverse the ring torque formulas to find acceptable ranges for motor torques.</p>
+
+  <!-- T_gm_nom_req -->
+  <div style="margin-bottom: 2rem;">
+    <h6>Required GM Nominal Torque (ID 10)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.gm_nom_required.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.gm_nom_required.description }}</p>
+    <div class="value-box">
+      {% for value in formulas_data.gm_nom_required.values %}
+        {{ value }}<br>
+      {% endfor %}
+    </div>
+    <div class="note-box">
+      <strong><i class="bi bi-info-circle"></i> Note:</strong> {{ formulas_data.gm_nom_required.note }}
+    </div>
+  </div>
+
+  <!-- T_gm_start_max -->
+  <div>
+    <h6>Maximum Permissible GM Starting Torque (ID 8)</h6>
+    <div class="formula-box">
+      <div style="font-size: 1.3rem;">
+        $${{ formulas_data.gm_start_max.latex }}$$
+      </div>
+    </div>
+    <p>{{ formulas_data.gm_start_max.description }}</p>
+    <div class="value-box">
+      {% for value in formulas_data.gm_start_max.values %}
+        {{ value }}<br>
+      {% endfor %}
+    </div>
+    <div class="note-box" style="border-left-color: #dc3545; background: #ffe7e7;">
+      <strong><i class="bi bi-exclamation-triangle"></i> Critical:</strong> {{ formulas_data.gm_start_max.note }}
+    </div>
+  </div>
+</div>
+
+<!-- Summary Table -->
+<div class="formula-section">
+  <div class="formula-title">Quick Reference: All Formulas</div>
+  <table class="variables-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Formula Name</th>
+        <th>Input</th>
+        <th>Output</th>
+        <th>Validation Check</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Total Reduction</td>
+        <td>i_gb, i_slew</td>
+        <td>i_tot</td>
+        <td>None (intermediate)</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>GM Output Speed</td>
+        <td>n_mot, i_gb</td>
+        <td>n_gm</td>
+        <td>Check 2: n_gm in range</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Crane Slewing Speed</td>
+        <td>n_mot, i_tot</td>
+        <td>n_slew</td>
+        <td>Check 1 & 3: n_slew in range & near target</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Power Consistency</td>
+        <td>P, T_nom, n_gm</td>
+        <td>ΔP (%)</td>
+        <td>Check 4: ΔP ≤ 5%</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Ring Pull-Up</td>
+        <td>T_pu, CF</td>
+        <td>M_PU</td>
+        <td>Check 5: M_PU ≥ 90% M_rated</td>
+      </tr>
+      <tr>
+        <td><strong>6</strong></td>
+        <td>Ring Start Torque</td>
+        <td>T_start, CF</td>
+        <td>M_start</td>
+        <td>Check 6: M_rated ≤ M_start ≤ M_max</td>
+      </tr>
+      <tr>
+        <td><strong>7</strong></td>
+        <td>Ring Peak Torque</td>
+        <td>T_peak, CF</td>
+        <td>M_peak</td>
+        <td>Check 7: M_peak ≤ M_max</td>
+      </tr>
+      <tr>
+        <td><strong>8</strong></td>
+        <td>Ring Nominal Torque</td>
+        <td>T_nom, CF</td>
+        <td>M_S2</td>
+        <td>None (intermediate)</td>
+      </tr>
+      <tr>
+        <td><strong>9</strong></td>
+        <td>Gearbox Input</td>
+        <td>T_bd, T_in_max</td>
+        <td>–</td>
+        <td>Check 9: T_bd ≤ T_in_max</td>
+      </tr>
+      <tr>
+        <td><strong>10</strong></td>
+        <td>Required GM Nominal</td>
+        <td>M_rated, CF</td>
+        <td>T_gm_nom_req</td>
+        <td>Acceptance range (ref. value)</td>
+      </tr>
+      <tr>
+        <td><strong>11</strong></td>
+        <td>Max GM Start</td>
+        <td>M_max, CF</td>
+        <td>T_gm_start_max</td>
+        <td>Check 8: T_start ≤ T_gm_start_max</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+
+{% endblock %}
