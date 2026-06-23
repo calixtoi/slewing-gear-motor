@@ -2,6 +2,7 @@ import json
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Motor, RingSystem
 from .services import evaluate, verdict
+from .formula_builder import SymbolicFormula
 
 FORMULAS = {
     'title': 'Motor Validation Formulas',
@@ -378,6 +379,9 @@ def build_calculation_steps(motor_input, ring_system, result):
 
     # Step 1: Total Reduction
     i_tot = motor_input['i_gb'] * ring_system.i_slew
+    formula_latex, substitution_latex, _ = SymbolicFormula.total_reduction_formula(
+        motor_input['i_gb'], ring_system.i_slew
+    )
     steps.append({
         'number': '1',
         'title': 'Total Reduction Ratio',
@@ -386,13 +390,16 @@ def build_calculation_steps(motor_input, ring_system, result):
             {'label': 'i_{gb}', 'value': motor_input['i_gb'], 'unit': ':1', 'source': 'Motor datasheet'},
             {'label': 'i_{slew}', 'value': ring_system.i_slew, 'unit': ':1', 'source': 'System constant'},
         ],
-        'formula': r'i_{\text{tot}} = i_{\text{gb}} \times i_{\text{slew}} = ' + f'{motor_input["i_gb"]} \\times {ring_system.i_slew} = {i_tot:.2f}',
+        'formula': formula_latex,
+        'substitution': substitution_latex,
         'output': {'label': 'i_{tot}', 'value': i_tot, 'unit': ':1'},
     })
 
     # Step 2: GM Output Speed
     n_gm = motor_input['n_mot'] / motor_input['i_gb']
-    formula_str = r'n_{\text{gm}} = \dfrac{n_{\text{mot}}}{i_{\text{gb}}} = \dfrac{' + str(motor_input['n_mot']) + '}{' + str(motor_input['i_gb']) + '} = ' + f'{n_gm:.2f}'
+    formula_latex, substitution_latex, _ = SymbolicFormula.gm_output_speed_formula(
+        motor_input['n_mot'], motor_input['i_gb']
+    )
     steps.append({
         'number': '2',
         'title': 'GM Output Speed',
@@ -401,7 +408,8 @@ def build_calculation_steps(motor_input, ring_system, result):
             {'label': 'n_{mot}', 'value': motor_input['n_mot'], 'unit': 'rpm', 'source': 'Motor datasheet'},
             {'label': 'i_{gb}', 'value': motor_input['i_gb'], 'unit': ':1', 'source': 'Motor datasheet'},
         ],
-        'formula': formula_str,
+        'formula': formula_latex,
+        'substitution': substitution_latex,
         'output': {'label': 'n_{gm}', 'value': n_gm, 'unit': 'rpm'},
         'constraints': [
             f'Acceptable window: {ring_system.n_gm_min}–{ring_system.n_gm_max} rpm',
@@ -411,7 +419,9 @@ def build_calculation_steps(motor_input, ring_system, result):
 
     # Step 3: Crane Slewing Speed
     n_slew = motor_input['n_mot'] / i_tot
-    formula_str = r'n_{\text{slew}} = \dfrac{n_{\text{mot}}}{i_{\text{tot}}} = \dfrac{' + str(motor_input['n_mot']) + '}{' + f'{i_tot:.2f}' + '} = ' + f'{n_slew:.4f}'
+    formula_latex, substitution_latex, _ = SymbolicFormula.slewing_speed_formula(
+        motor_input['n_mot'], i_tot
+    )
     steps.append({
         'number': '3',
         'title': 'Crane Slewing Speed',
@@ -420,7 +430,8 @@ def build_calculation_steps(motor_input, ring_system, result):
             {'label': 'n_{mot}', 'value': motor_input['n_mot'], 'unit': 'rpm', 'source': 'Motor datasheet'},
             {'label': 'i_{tot}', 'value': i_tot, 'unit': ':1', 'source': 'From Step 1'},
         ],
-        'formula': formula_str,
+        'formula': formula_latex,
+        'substitution': substitution_latex,
         'output': {'label': 'n_{slew}', 'value': n_slew, 'unit': 'rpm'},
         'constraints': [
             f'Acceptable window: {ring_system.n_slew_min}–{ring_system.n_slew_max} rpm',
@@ -432,6 +443,9 @@ def build_calculation_steps(motor_input, ring_system, result):
     # Step 4: Power Consistency
     dP_fraction = result.get('dP')
     dP_percent = dP_fraction * 100 if dP_fraction else None
+    formula_latex, substitution_latex, _ = SymbolicFormula.power_consistency_formula(
+        motor_input['P'], motor_input['T_nom'], n_gm, ring_system.k
+    )
     steps.append({
         'number': '4',
         'title': 'Power Consistency Check',
@@ -442,7 +456,8 @@ def build_calculation_steps(motor_input, ring_system, result):
             {'label': 'n_{gm}', 'value': n_gm, 'unit': 'rpm', 'source': 'From Step 2'},
             {'label': 'k', 'value': ring_system.k, 'unit': '–', 'source': 'Constant (60000/2π)'},
         ],
-        'formula': r'\Delta P = \dfrac{\left| ' + f'{motor_input["P"]}' + r' - \dfrac{' + f'{motor_input["T_nom"]} \\times {n_gm:.2f}' + r'}{' + f'{ring_system.k}' + r'} \right|}{' + f'{motor_input["P"]}' + r'} \times 100\% = ' + f'{dP_percent:.2f if dP_percent else "N/A"}%',
+        'formula': formula_latex,
+        'substitution': substitution_latex,
         'output': {'label': '\\Delta P', 'value': dP_percent, 'unit': '%'},
         'constraints': [
             f'Required: ΔP ≤ 5%',
@@ -451,6 +466,22 @@ def build_calculation_steps(motor_input, ring_system, result):
     })
 
     # Step 5: Ring Torques
+    sub_steps_list = []
+    for torque_type, T_value in [
+        ('nom', motor_input['T_nom']),
+        ('pu', motor_input['T_pu']),
+        ('start', motor_input['T_start']),
+        ('peak', motor_input['T_peak']),
+    ]:
+        formula_latex, substitution_latex, M_value = SymbolicFormula.ring_torque_formula(
+            torque_type, T_value, ring_system.CF
+        )
+        sub_steps_list.append({
+            'formula': formula_latex,
+            'substitution': substitution_latex,
+            'output': f'{M_value:.0f}' if M_value else 'N/A',
+        })
+
     steps.append({
         'number': '5',
         'title': 'Ring Torques (GM Output × CF)',
@@ -462,29 +493,20 @@ def build_calculation_steps(motor_input, ring_system, result):
             {'label': 'T_{peak}', 'value': motor_input['T_peak'], 'unit': 'Nm', 'source': 'Motor datasheet'},
             {'label': 'CF', 'value': ring_system.CF, 'unit': '–', 'source': 'System constant'},
         ],
-        'sub_steps': [
-            {
-                'formula': r'M_{S2} = T_{\text{nom}} \times CF = ' + f'{motor_input["T_nom"]} \\times {ring_system.CF} = ' + f'{result.get("M_S2", 0):.0f}',
-                'output': f'Ring nominal torque: {result.get("M_S2", 0):.0f} Nm',
-            },
-            {
-                'formula': r'M_{\text{PU}} = T_{\text{pu}} \times CF = ' + (f'{motor_input["T_pu"]} \\times {ring_system.CF} = ' + f'{result.get("M_PU", 0):.0f}' if motor_input['T_pu'] else 'Not provided'),
-                'output': f'Ring pull-up torque: {result.get("M_PU", 0):.0f} Nm' if motor_input['T_pu'] else 'Ring pull-up torque: Not available',
-            },
-            {
-                'formula': r'M_{\text{start}} = T_{\text{start}} \times CF = ' + f'{motor_input["T_start"]} \\times {ring_system.CF} = ' + f'{result.get("M_start", 0):.0f}',
-                'output': f'Ring start torque: {result.get("M_start", 0):.0f} Nm',
-            },
-            {
-                'formula': r'M_{\text{peak}} = T_{\text{peak}} \times CF = ' + f'{motor_input["T_peak"]} \\times {ring_system.CF} = ' + f'{result.get("M_peak", 0):.0f}',
-                'output': f'Ring peak torque: {result.get("M_peak", 0):.0f} Nm',
-            },
-        ],
+        'sub_steps': sub_steps_list,
     })
 
     # Step 6: Derived Limits
     T_gm_nom_req = ring_system.M_rated / ring_system.CF
     T_gm_start_max = ring_system.M_max / ring_system.CF
+
+    formula_nom, substitution_nom, _ = SymbolicFormula.required_gm_torque_formula(
+        ring_system.M_rated, ring_system.CF
+    )
+    formula_max, substitution_max, _ = SymbolicFormula.max_gm_torque_formula(
+        ring_system.M_max, ring_system.CF
+    )
+
     steps.append({
         'number': '6',
         'title': 'Derived Limits (Reverse Calculations)',
@@ -496,12 +518,14 @@ def build_calculation_steps(motor_input, ring_system, result):
         ],
         'sub_steps': [
             {
-                'formula': r'T_{\text{gm,nom,req}} = \dfrac{M_{\text{rated}}}{CF} = \dfrac{' + f'{ring_system.M_rated}' + r'}{' + f'{ring_system.CF}' + r'} = ' + f'{T_gm_nom_req:.1f}',
-                'output': f'Required motor nominal torque: {T_gm_nom_req:.1f} Nm',
+                'formula': formula_nom,
+                'substitution': substitution_nom,
+                'output': f'{T_gm_nom_req:.1f}',
             },
             {
-                'formula': r'T_{\text{gm,start,max}} = \dfrac{M_{\text{max}}}{CF} = \dfrac{' + f'{ring_system.M_max}' + r'}{' + f'{ring_system.CF}' + r'} = ' + f'{T_gm_start_max:.1f}',
-                'output': f'Max permissible motor start torque: {T_gm_start_max:.1f} Nm',
+                'formula': formula_max,
+                'substitution': substitution_max,
+                'output': f'{T_gm_start_max:.1f}',
             },
         ],
     })
