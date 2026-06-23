@@ -1,0 +1,192 @@
+{% extends 'calculator/base.html' %}
+
+{% block content %}
+<style>
+  .hero { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 4rem 2rem; border-radius: 8px; margin-bottom: 3rem; text-align: center; }
+  .hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem; }
+  .hero p { font-size: 1.1rem; margin-bottom: 0; opacity: 0.9; }
+
+  .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
+  .app-card { background: white; border-radius: 8px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s; border-top: 4px solid #007bff; }
+  .app-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
+
+  .app-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .app-card h5 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: #333; }
+  .app-card p { color: #666; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.5; }
+
+  .app-link { display: inline-block; padding: 0.75rem 1.5rem; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: 600; transition: all 0.3s; }
+  .app-link:hover { background: #0056b3; text-decoration: none; }
+
+  .badge-count { background: #e7f3ff; color: #0056b3; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; }
+
+  .crane-section { background: #f8f9fa; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+  .crane-section h5 { color: #0056b3; font-weight: 700; margin-bottom: 1rem; }
+  .crane-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  .crane-box { background: white; padding: 1.5rem; border-radius: 4px; border-left: 4px solid #007bff; }
+  .crane-box strong { color: #333; }
+  .crane-box small { color: #666; }
+
+  .features { background: white; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+  .features h5 { font-weight: 700; margin-bottom: 1rem; color: #333; }
+  .feature-list { list-style: none; padding: 0; margin: 0; }
+  .feature-list li { padding: 0.5rem 0; color: #555; }
+  .feature-list li:before { content: "✓ "; color: #28a745; font-weight: 700; margin-right: 0.5rem; }
+
+  .quick-stats { background: #e7f3ff; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+  .stat { display: inline-block; margin-right: 2rem; }
+  .stat-number { font-size: 1.8rem; font-weight: 700; color: #0056b3; }
+  .stat-label { color: #666; font-size: 0.9rem; }
+</style>
+
+<div class="hero">
+  <h1><i class="bi bi-ring"></i> Slewing Motor Validator</h1>
+  <p>Complete motor sizing and 11-point validation system for PF Standard and PF-XXL crane variants</p>
+</div>
+
+<!-- Quick Stats -->
+<div class="quick-stats">
+  {% for rs in ring_systems %}
+    <div class="stat">
+      <div class="stat-number">{{ rs.motors.count }}</div>
+      <div class="stat-label">{{ rs.get_system_type_display }} Motors</div>
+    </div>
+  {% endfor %}
+  <div class="stat">
+    <div class="stat-number">11</div>
+    <div class="stat-label">Validation Checks</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">2</div>
+    <div class="stat-label">Crane Variants</div>
+  </div>
+</div>
+
+<!-- Main Apps -->
+<h4 class="mb-3"><i class="bi bi-apps"></i> Applications</h4>
+<div class="app-grid">
+
+  <!-- Motor Validation App -->
+  <div class="app-card">
+    <div class="app-icon"><i class="bi bi-gear" style="color: #007bff;"></i></div>
+    <h5>Motor Validation</h5>
+    <p>Enter motor datasheet values and run the complete 11-point acceptance checklist. Get instant feedback: FITS, FITS—minor review, or DOES NOT FIT.</p>
+
+    <div style="margin-bottom: 1.5rem;">
+      <div style="margin-bottom: 0.8rem;">
+        <a href="{% url 'motor_list' 'standard_pf' %}" class="app-link" style="width: 100%; text-align: center;">
+          <i class="bi bi-play-circle"></i> PF Standard
+        </a>
+      </div>
+      <div>
+        <a href="{% url 'motor_list' 'pf_xxl' %}" class="app-link" style="width: 100%; text-align: center;">
+          <i class="bi bi-play-circle"></i> PF-XXL
+        </a>
+      </div>
+    </div>
+    <small class="text-muted">
+      <span class="badge-count">{{ motor_counts.standard_pf }} motors</span>
+      <span class="badge-count ms-2">{{ motor_counts.pf_xxl }} motors</span>
+    </small>
+  </div>
+
+  <!-- Formulas App -->
+  <div class="app-card">
+    <div class="app-icon"><i class="bi bi-formulae" style="color: #28a745;"></i></div>
+    <h5>Formulas & Reference</h5>
+    <p>Complete formula reference with LaTeX rendering, interactive verifier tool, and acceptance ranges specification for each crane type.</p>
+
+    <div style="margin-bottom: 1.5rem;">
+      <a href="{% url 'formulas' %}" class="app-link" style="width: 100%; text-align: center;">
+        <i class="bi bi-book"></i> View All Formulas
+      </a>
+    </div>
+
+    <div style="font-size: 0.85rem; color: #666;">
+      <div>• 10 calculation formulas</div>
+      <div>• Manual verifier tool</div>
+      <div>• Acceptance ranges per crane</div>
+    </div>
+  </div>
+
+  <!-- Comparison App -->
+  <div class="app-card">
+    <div class="app-icon"><i class="bi bi-diagram-3" style="color: #ffc107;"></i></div>
+    <h5>Motor Comparison</h5>
+    <p>Compare all validated motors side-by-side. View specifications, calculation results, and validation status across your fleet.</p>
+
+    <div style="margin-bottom: 1.5rem;">
+      <div style="margin-bottom: 0.8rem;">
+        <a href="{% url 'comparison' %}?crane=standard_pf" class="app-link" style="width: 100%; text-align: center;">
+          <i class="bi bi-bar-chart"></i> PF Standard
+        </a>
+      </div>
+      <div>
+        <a href="{% url 'comparison' %}?crane=pf_xxl" class="app-link" style="width: 100%; text-align: center;">
+          <i class="bi bi-bar-chart"></i> PF-XXL
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requirements App -->
+  <div class="app-card">
+    <div class="app-icon"><i class="bi bi-list-check" style="color: #dc3545;"></i></div>
+    <h5>System Requirements</h5>
+    <p>View complete ring system specifications, acceptance criteria, and motor requirement matrices for both crane variants.</p>
+
+    <div style="margin-bottom: 1.5rem;">
+      <a href="{% url 'requirements' %}" class="app-link" style="width: 100%; text-align: center;">
+        <i class="bi bi-file-text"></i> View Requirements
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Ring System Overview -->
+<div class="crane-section">
+  <h5><i class="bi bi-ring"></i> Ring System Overview</h5>
+  <div class="crane-grid">
+    {% for rs in ring_systems %}
+      <div class="crane-box">
+        <strong>{{ rs.get_system_type_display }}</strong><br>
+        <small>{{ rs.ring_model }}</small><br>
+        <small style="display: block; margin-top: 0.5rem;">
+          CF = {{ rs.CF }}<br>
+          M_max = {{ rs.M_max|floatformat:0 }} Nm<br>
+          n_slew = {{ rs.n_slew_min }}–{{ rs.n_slew_max }} rpm
+        </small>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Features -->
+<div class="features">
+  <h5><i class="bi bi-star"></i> Key Features</h5>
+  <ul class="feature-list">
+    <li>11-point validation checklist with color-coded results (PASS/REVIEW/FAIL)</li>
+    <li>Pre-seeded reference motors (WEG EP2557M, Z:systems ZK33CV, ZK43CV)</li>
+    <li>Professional LaTeX formula rendering with step-by-step calculations</li>
+    <li>Manual formula verifier tool with quick-fill for reference motors</li>
+    <li>Complete acceptance ranges specification per crane type</li>
+    <li>Side-by-side motor comparison view</li>
+    <li>Pure Python calculation engine (easy to test and verify)</li>
+    <li>Exact formula implementation verified to ±0.5% tolerance</li>
+  </ul>
+</div>
+
+<!-- Getting Started -->
+<div class="features" style="background: #e7f3ff;">
+  <h5><i class="bi bi-play-fill"></i> Getting Started</h5>
+  <ol style="margin: 0; padding-left: 1.5rem; color: #555;">
+    <li><strong>View Reference Motors:</strong> Go to <a href="{% url 'motor_list' 'standard_pf' %}">Motor Validation</a> to see pre-loaded examples</li>
+    <li><strong>Learn the Formulas:</strong> Visit <a href="{% url 'formulas' %}">Formulas & Reference</a> to understand all calculations</li>
+    <li><strong>Test Manually:</strong> Use the <a href="{% url 'formula_verifier' %}">Formula Verifier</a> to check any motor parameters</li>
+    <li><strong>Add Your Motor:</strong> Click "Add New Motor" to validate your own datasheet</li>
+    <li><strong>Compare Results:</strong> View all motors in the <a href="{% url 'comparison' %}">Motor Comparison</a> table</li>
+  </ol>
+</div>
+
+
+{% endblock %}

@@ -122,7 +122,17 @@ FORMULAS = {
 
 
 def index(request):
-    return redirect('motor_list', system_type='standard_pf')
+    """Landing page with navigation to all apps."""
+    ring_systems = RingSystem.objects.all().order_by('system_type')
+    motor_counts = {}
+    for rs in ring_systems:
+        motor_counts[rs.system_type] = rs.motors.count()
+
+    return render(request, 'calculator/index.html', {
+        'ring_systems': ring_systems,
+        'motor_counts': motor_counts,
+        'active_page': 'home',
+    })
 
 
 def formulas(request):
