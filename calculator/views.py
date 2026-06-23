@@ -643,3 +643,112 @@ def worked_examples(request):
         **_crane_context(),
     }
     return render(request, 'calculator/worked_examples.html', context)
+
+
+# ── Motor Sizing & 11-Point Validation ────────────────────────────────────
+
+def motor_list(request, system_type='standard_pf'):
+    """List all motors for a ring system."""
+    ring_system = get_object_or_404(RingSystem, system_type=system_type)
+    motors = Motor.objects.filter(ring_system=ring_system).order_by('-created_at')
+    
+    return render(request, 'calculator/motor_list.html', {
+        'ring_system': ring_system,
+        'motors': motors,
+        'active_page': 'motors',
+    })
+
+
+def motor_create(request, system_type='standard_pf'):
+    """Create and evaluate a new motor."""
+    from .forms_motor import MotorForm, QuickMotorForm
+    from .services import evaluate, verdict
+    
+    ring_system = get_object_or_404(RingSystem, system_type=system_type)
+    result = None
+    checks = {}
+    passed_count = 0
+    
+    if request.method == 'POST':
+        form = MotorForm(request.POST, ring_system=ring_system)
+        if form.is_valid():
+            motor = form.save(commit=False)
+            motor.ring_system = ring_system
+            
+            # Evaluate the motor
+            motor_input = {
+                'i_gb': motor.i_gb,
+                'n_mot': motor.n_mot,
+                'P': motor.P,
+                'T_nom': motor.T_nom,
+                'T_pu': motor.T_pu,
+                'T_start': motor.T_start,
+                'T_peak': motor.T_peak,
+                'T_in_max': motor.T_in_max,
+                'T_bd': motor.T_bd,
+                'fB': motor.fB,
+                'duty': motor.duty,
+                'flange': motor.flange,
+            }
+            
+            result = evaluate(motor_input, ring_system)
+            checks = result.get('checks', {})
+            passed_count = sum(1 for c in checks.values() if c['status'] == 'PASS')
+            
+            # Save motor with results
+            motor.i_tot = result.get('i_tot')
+            motor.n_gm = result.get('n_gm')
+            motor.n_slew = result.get('n_slew')
+            motor.dP = result.get('dP')
+            motor.M_S2 = result.get('M_S2')
+            motor.M_PU = result.get('M_PU')
+            motor.M_start = result.get('M_start')
+            motor.M_peak = result.get('M_peak')
+            
+            import json
+            motor.checks_json = json.dumps(checks)
+            motor.verdict = verdict(checks)
+            motor.passed_count = passed_count
+            
+            motor.save()
+            return redirect('motor_detail', pk=motor.pk)
+    else:
+        form = MotorForm(ring_system=ring_system)
+    
+    return render(request, 'calculator/motor_form.html', {
+        'ring_system': ring_system,
+        'form': form,
+        'result': result,
+        'checks': checks,
+        'passed_count': passed_count,
+        'active_page': 'motors',
+    })
+
+
+def motor_detail(request, pk):
+    """Display the validation results for a motor."""
+    motor = get_object_or_404(Motor, pk=pk)
+    ring_system = motor.ring_system
+    checks = motor.checks
+    
+    # Prepare result dict for template
+    result = {
+        'i_tot': motor.i_tot,
+        'n_gm': motor.n_gm,
+        'n_slew': motor.n_slew,
+        'dP': motor.dP * 100 if motor.dP is not None else None,
+        'M_S2': motor.M_S2,
+        'M_PU': motor.M_PU,
+        'M_start': motor.M_start,
+        'M_peak': motor.M_peak,
+        'verdict': motor.verdict,
+        'passed_count': motor.passed_count,
+    }
+    
+    return render(request, 'calculator/motor_results.html', {
+        'motor': motor,
+        'ring_system': ring_system,
+        'result': result,
+        'checks': checks,
+        'active_page': 'motors',
+    })

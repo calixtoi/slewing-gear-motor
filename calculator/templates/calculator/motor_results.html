@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Motor Validation Results — Slewing Gear Motor Calculator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #f5f7fa; padding: 2rem 0; }
+    .container { max-width: 1200px; margin-bottom: 3rem; }
+    .card { box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+    .card-header { background: #f8f9fa; font-weight: 600; }
+    .badge-pass { background: #28a745; }
+    .badge-review { background: #ffc107; color: #000; }
+    .badge-fail { background: #dc3545; }
+    .verdict-pass { background: #d4edda; border-left: 4px solid #28a745; padding: 1.5rem; border-radius: 4px; }
+    .verdict-review { background: #fff3cd; border-left: 4px solid #ffc107; padding: 1.5rem; border-radius: 4px; }
+    .verdict-fail { background: #f8d7da; border-left: 4px solid #dc3545; padding: 1.5rem; border-radius: 4px; }
+    .check-table tbody tr:hover { background: #f8f9fa; }
+    .check-status { font-weight: 600; text-align: center; }
+    .check-pass { background: #e8f5e9; }
+    .check-review { background: #fff9c4; }
+    .check-fail { background: #ffebee; }
+    table.calculation-table { font-size: 0.9rem; }
+    table.calculation-table th { background: #f8f9fa; font-weight: 600; }
+    table.calculation-table td { padding: 0.5rem; }
+    .value-number { font-family: 'Courier New', monospace; text-align: right; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1>Motor Validation Results</h1>
+      <p class="text-muted">{{ ring_system.get_system_type_display }} — {{ motor.supplier }} {{ motor.model }}</p>
+    </div>
+  </div>
+
+  <!-- Verdict Badge -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="verdict-{{ result.verdict|lower }}">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin: 0;">
+              {% if result.verdict == 'FITS' %}
+                <i class="bi bi-check-circle" style="color: #28a745;"></i> FITS
+              {% elif result.verdict == 'FITS_REVIEW' %}
+                <i class="bi bi-exclamation-circle" style="color: #ffc107;"></i> FITS — minor review
+              {% else %}
+                <i class="bi bi-x-circle" style="color: #dc3545;"></i> DOES NOT FIT
+              {% endif %}
+            </h3>
+            <p style="margin: 0.5rem 0 0;">{{ result.passed_count }}/11 checks passed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculation Chain Table -->
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-calculator"></i> Calculation Chain
+    </div>
+    <div class="card-body">
+      <table class="calculation-table w-100">
+        <tr>
+          <th>Symbol</th>
+          <th>Description</th>
+          <th>Calculated</th>
+          <th>Unit</th>
+        </tr>
+        <tr>
+          <td><strong>i_tot</strong></td>
+          <td>Total reduction = i_gb × i_slew</td>
+          <td class="value-number"><strong>{{ result.i_tot|floatformat:0 }}</strong></td>
+          <td>:1</td>
+        </tr>
+        <tr>
+          <td><strong>n_gm</strong></td>
+          <td>GM output speed = n_mot / i_gb</td>
+          <td class="value-number"><strong>{{ result.n_gm|floatformat:1 }}</strong></td>
+          <td>rpm</td>
+        </tr>
+        <tr>
+          <td><strong>n_slew</strong></td>
+          <td>Crane slewing speed = n_gm / i_slew</td>
+          <td class="value-number"><strong>{{ result.n_slew|floatformat:3 }}</strong></td>
+          <td>rpm</td>
+        </tr>
+        <tr>
+          <td><strong>dP</strong></td>
+          <td>Power consistency = |P - T_nom·n_gm/k| / P</td>
+          <td class="value-number"><strong>{{ result.dP|floatformat:1 }}%</strong></td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="padding: 0.75rem; background: #f8f9fa; font-weight: 600;">Ring-level torques (T × CF)</td>
+        </tr>
+        <tr>
+          <td><strong>M_S2</strong></td>
+          <td>Ring running torque = T_nom × CF</td>
+          <td class="value-number"><strong>{{ result.M_S2|floatformat:0 }}</strong></td>
+          <td>Nm</td>
+        </tr>
+        <tr>
+          <td><strong>M_PU</strong></td>
+          <td>Ring pull-up torque = T_pu × CF</td>
+          <td class="value-number">{% if result.M_PU %}{{ result.M_PU|floatformat:0 }}{% else %}<em>—</em>{% endif %}</td>
+          <td>Nm</td>
+        </tr>
+        <tr>
+          <td><strong>M_start</strong></td>
+          <td>Ring start/breakaway torque = T_start × CF</td>
+          <td class="value-number"><strong>{{ result.M_start|floatformat:0 }}</strong></td>
+          <td>Nm</td>
+        </tr>
+        <tr>
+          <td><strong>M_peak</strong></td>
+          <td>Ring peak torque = T_peak × CF</td>
+          <td class="value-number"><strong>{{ result.M_peak|floatformat:0 }}</strong></td>
+          <td>Nm</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 11-Point Validation Table -->
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-list-check"></i> 11-Point Validation Checklist
+    </div>
+    <div class="card-body p-0">
+      <table class="check-table table table-sm mb-0">
+        <thead style="background: #f8f9fa;">
+          <tr>
+            <th style="width: 40px;">#</th>
+            <th>Check</th>
+            <th style="width: 80px;">Expected</th>
+            <th style="width: 80px;">Actual</th>
+            <th style="width: 100px; text-align: center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for check_key, check in checks.items %}
+            <tr class="check-{{ check.status|lower }}">
+              <td>{{ forloop.counter }}</td>
+              <td>{{ check.label }}</td>
+              <td><small>{{ check.expected }}</small></td>
+              <td><small>{{ check.actual }}</small></td>
+              <td class="check-status">
+                {% if check.status == 'PASS' %}
+                  <span class="badge badge-pass">PASS</span>
+                {% elif check.status == 'REVIEW' %}
+                  <span class="badge badge-review">REVIEW</span>
+                {% else %}
+                  <span class="badge badge-fail">FAIL</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Motor Specs Summary -->
+  <div class="card">
+    <div class="card-header">
+      <i class="bi bi-info-circle"></i> Motor Specifications
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <dl class="row" style="font-size: 0.9rem;">
+            <dt class="col-sm-5">Supplier:</dt>
+            <dd class="col-sm-7"><strong>{{ motor.supplier }} {{ motor.model }}</strong></dd>
+
+            <dt class="col-sm-5">Gearmotor type:</dt>
+            <dd class="col-sm-7">{{ motor.gm_type }}</dd>
+
+            <dt class="col-sm-5">Gearbox ratio (i_gb):</dt>
+            <dd class="col-sm-7"><code>{{ motor.i_gb }}</code></dd>
+
+            <dt class="col-sm-5">Motor speed:</dt>
+            <dd class="col-sm-7">{{ motor.n_mot }} rpm</dd>
+
+            <dt class="col-sm-5">Motor power:</dt>
+            <dd class="col-sm-7">{{ motor.P }} kW</dd>
+
+            <dt class="col-sm-5">Duty cycle:</dt>
+            <dd class="col-sm-7">{{ motor.duty|default:"—" }}</dd>
+          </dl>
+        </div>
+        <div class="col-md-6">
+          <dl class="row" style="font-size: 0.9rem;">
+            <dt class="col-sm-5">Flange:</dt>
+            <dd class="col-sm-7">{{ motor.flange|default:"—" }}</dd>
+
+            <dt class="col-sm-5">Voltage:</dt>
+            <dd class="col-sm-7">{{ motor.voltage|default:"—" }}</dd>
+
+            <dt class="col-sm-5">IP rating:</dt>
+            <dd class="col-sm-7">{{ motor.IP|default:"—" }}</dd>
+
+            <dt class="col-sm-5">Insulation:</dt>
+            <dd class="col-sm-7">{{ motor.insulation|default:"—" }}</dd>
+
+            <dt class="col-sm-5">Cooling:</dt>
+            <dd class="col-sm-7">{{ motor.cooling|default:"—" }}</dd>
+
+            <dt class="col-sm-5">Heater:</dt>
+            <dd class="col-sm-7">{{ motor.heater|default:"—" }}</dd>
+          </dl>
+        </div>
+      </div>
+      {% if motor.notes %}
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+          <strong>Notes:</strong> {{ motor.notes }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="row">
+    <div class="col-12">
+      <a href="{% url 'motor_list' ring_system.system_type %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to motors
+      </a>
+      <a href="{% url 'motor_create' ring_system.system_type %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Add another motor
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
