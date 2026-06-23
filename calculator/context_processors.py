@@ -1,10 +1,14 @@
-from .models import MotorCalculation
+from .models import Motor, RingSystem
 
 
 def sidebar_data(request):
-    qs = MotorCalculation.objects.values('pk', 'supplier_name', 'crane_type', 'torque_check').order_by('-saved_at')
+    """Provide sidebar context with recent motors and counts by system."""
+    qs = Motor.objects.select_related('ring_system').values(
+        'pk', 'supplier', 'model', 'ring_system__system_type', 'verdict'
+    ).order_by('-created_at')
+
     return {
-        'sidebar_calculations': qs[:30],
-        'sidebar_standard_count': MotorCalculation.objects.filter(crane_type=MotorCalculation.STANDARD_PF).count(),
-        'sidebar_xxl_count': MotorCalculation.objects.filter(crane_type=MotorCalculation.PF_XXL).count(),
+        'sidebar_motors': qs[:30],
+        'sidebar_standard_count': Motor.objects.filter(ring_system__system_type=RingSystem.STANDARD_PF).count(),
+        'sidebar_xxl_count': Motor.objects.filter(ring_system__system_type=RingSystem.PF_XXL).count(),
     }
