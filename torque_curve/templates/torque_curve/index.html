@@ -41,13 +41,18 @@
     </div>
 
     <div class="card-body">
-      {# Chart canvas #}
-      <div style="position:relative; height:420px;">
-        <canvas id="torqueCurveChart"></canvas>
+      {# Chart on white panel for readability over dark page background #}
+      <div class="rounded p-3 mb-3" style="background:#fff;border:1px solid #dee2e6;">
+        <div style="position:relative; height:420px;">
+          <canvas id="torqueCurveChart"></canvas>
+        </div>
       </div>
 
+      {# Acceptance checks — same data as Calculator #}
+      <div id="checksTable" class="mb-3"></div>
+
       {# Key points annotation table #}
-      <div class="mt-3" id="annotationTable"></div>
+      <div id="annotationTable"></div>
     </div>
   </div>
 
@@ -255,13 +260,19 @@ function buildChartConfig(data, motorLabel) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top' },
+        legend: {
+          position: 'top',
+          labels: { color: '#212529', font: { size: 13 } },
+        },
         tooltip: {
+          backgroundColor: 'rgba(33,37,41,.95)',
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 },
           callbacks: {
             label: ctx => {
               if (ctx.datasetIndex === 2) {
                 const pt = data.named_points[ctx.dataIndex];
-                return pt.label + ': ' + pt.torque_nm + ' Nm' + (pt.exceeds_limit ? ' ⚠ EXCEEDS LIMIT' : '');
+                return pt.label + ': ' + pt.torque_nm + ' Nm' + (pt.exceeds_limit ? ' — EXCEEDS LIMIT' : '');
               }
               if (ctx.datasetIndex === 1) return 'Structural limit: ' + limitY + ' Nm';
               return ctx.parsed.y.toFixed(1) + ' Nm at ' + ctx.parsed.x + '% speed';
@@ -272,17 +283,56 @@ function buildChartConfig(data, motorLabel) {
       scales: {
         x: {
           type: 'linear',
-          title: { display: true, text: 'Motor speed (% of rated speed)' },
+          title: { display: true, text: 'Motor speed (% of rated speed)', color: '#212529', font: { weight: 'bold' } },
           min: 0, max: 105,
-          ticks: { callback: v => v + '%' },
+          ticks: { color: '#495057', callback: v => v + '%' },
+          grid: { color: 'rgba(0,0,0,.08)' },
         },
         y: {
-          title: { display: true, text: 'Gearbox output shaft torque (Nm)' },
+          title: { display: true, text: 'Gearbox output shaft torque (Nm)', color: '#212529', font: { weight: 'bold' } },
           min: 0,
+          ticks: { color: '#495057' },
+          grid: { color: 'rgba(0,0,0,.08)' },
         },
       },
     },
   };
+}
+
+function renderChecksTable(data) {
+  const el = document.getElementById('checksTable');
+  if (!data.checks || !data.checks.length) { el.innerHTML = ''; return; }
+
+  const statusClass = s => s === 'PASS' ? 'table-success' : (s === 'REVIEW' ? 'table-warning' : 'table-danger');
+  const badge = s => s === 'PASS'
+    ? '<span class="badge bg-success">PASS</span>'
+    : (s === 'REVIEW' ? '<span class="badge bg-warning text-dark">REVIEW</span>' : '<span class="badge bg-danger">FAIL</span>');
+
+  const headerClass = data.overall_status === 'PASS' ? 'bg-success text-white'
+    : (data.overall_status === 'REVIEW' ? 'bg-warning text-dark' : 'bg-danger text-white');
+
+  let rows = data.checks.map(c => `
+    <tr class="${statusClass(c.status)}">
+      <td class="fw-semibold">${c.label}</td>
+      <td class="text-center">${badge(c.status)}</td>
+      <td>${c.message}${c.action ? '<div class="small fw-semibold text-danger mt-1">' + c.action + '</div>' : ''}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <div class="card border-0 shadow-sm">
+      <div class="card-header ${headerClass} d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clipboard2-check me-2"></i>Drivetrain Acceptance Checks</span>
+        <span class="badge ${data.overall_status === 'PASS' ? 'bg-light text-success' : (data.overall_status === 'REVIEW' ? 'bg-dark text-warning' : 'bg-light text-danger')} fs-6">${data.overall_status || ''}</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="table-dark">
+            <tr><th style="width:32%">Check</th><th style="width:10%" class="text-center">Status</th><th>Detail</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function renderAnnotationTable(data) {
@@ -313,6 +363,7 @@ function showMotor(key) {
     chart.destroy();
   }
   chart = new Chart(document.getElementById('torqueCurveChart'), config);
+  renderChecksTable(data);
   renderAnnotationTable(data);
 }
 
@@ -356,6 +407,7 @@ async function plotCustomMotor() {
     const config = buildChartConfig(data, 'Custom motor');
     if (chart) chart.destroy();
     chart = new Chart(document.getElementById('torqueCurveChart'), config);
+    renderChecksTable(data);
     renderAnnotationTable(data);
   } catch (e) {
     errDiv.textContent = 'Error: ' + e.message;

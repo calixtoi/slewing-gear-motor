@@ -13,5 +13,6 @@ urlpatterns = [
     path('formulas/', views.formulas, name='formulas'),
     path('comparison/', views.comparison, name='comparison'),
     path('requirements/', views.requirements, name='requirements'),
+    path('examples/', views.worked_examples, name='worked_examples'),
     path('api/calculate/', views.calculate_ajax, name='calculate_ajax'),
 ]

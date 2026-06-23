@@ -104,6 +104,19 @@ def build_curve_data(result):
         'i_slew':            r.i_slew,
         'CF':                round(r.CF, 1),
         'T_crane_lim':       r.T_crane_lim,
+        'n_slew':            round(r.n_crane, 3),
+        'M_Nenn':            round(r.M_Nenn, 0),
+        'Ma_Max':            round(r.Ma_Max, 0),
+        'Mk_Max':            round(r.Mk_Max, 0),
+        'checks': [
+            {
+                'label':   v['label'],
+                'status':  v['status'],
+                'message': v.get('message', ''),
+                'action':  v.get('action', ''),
+            }
+            for v in r.checks.values()
+        ],
     }
 
 

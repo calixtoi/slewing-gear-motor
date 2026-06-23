@@ -615,3 +615,55 @@ def comparison(request):
         'crane_filter': crane_filter,
         'active_page': 'comparison',
     })
+
+
+def worked_examples(request):
+    """Display worked examples from notebook §5 & §6"""
+    # Example 1: Watt Drive EP2557M 1.1 kW on PF Standard (§5 — FITS)
+    example_pf_standard = drivetrain_sizing(
+        crane_type=CRANE_STANDARD_PF,
+        motor_power_kw=1.1,
+        motor_speed_rpm=1365,
+        gm_out_speed_rpm=51,
+        gm_out_nom_nm=141,
+        gm_out_start_nm=295,
+        Mk_Mn=3.40,
+        i_gb=27.82,
+        gm_out_pullup_nm=295,
+    )
+    example_pf_standard.notebook_section = '§5'
+    example_pf_standard.title = 'Watt Drive EP2557M — 1.1 kW on PF Standard'
+    example_pf_standard.supplier = 'Watt Drive (WEG Group)'
+    example_pf_standard.motor_type = 'Squirrel cage async helical bevel gearmotor'
+    example_pf_standard.duty_cycle_stated = 'S2-12 min'
+    example_pf_standard.verdict = 'FITS — 9/10 checks PASS, 1 REVIEW (duty cycle thermal confirmation at +45°C)'
+    example_pf_standard.verdict_detail = 'The Watt Drive EP2557M 1.1 kW is the validated reference motor for PF Standard. All structural torque checks pass with comfortable margin; the only open item is confirming S2-12 min duty thermally at offshore ambient (+45°C).'
+
+    # Example 2: Z:systems ZK43CV on PF-XXL (§6 — DOES NOT FIT)
+    example_pf_xxl = drivetrain_sizing(
+        crane_type=CRANE_PF_XXL,
+        motor_power_kw=1.5,
+        motor_speed_rpm=1415,
+        gm_out_speed_rpm=37,
+        gm_out_nom_nm=390,
+        gm_out_start_nm=1130,
+        Mk_Mn=3.40,
+        i_gb=38.17,
+    )
+    example_pf_xxl.notebook_section = '§6'
+    example_pf_xxl.title = 'Z:systems ZK43CV DM90-4 — 1.5 kW on PF-XXL'
+    example_pf_xxl.supplier = 'Z:systems'
+    example_pf_xxl.motor_type = 'Squirrel cage async helical bevel gearmotor'
+    example_pf_xxl.duty_cycle_stated = 'S3-15%'
+    example_pf_xxl.verdict = 'DOES NOT FIT — 3 FAIL on starting torque / Ma·Mn'
+    example_pf_xxl.verdict_detail = 'Starting torque 1,130 Nm exceeds limit 1,033 Nm by 97 Nm. Ma/Mn actual (2.90) exceeds limit (2.65). Action: require soft-start (VFD) capping GM starting torque at ≤ 1,033 Nm, or specify Ma/Mn ≤ 2.65 to the supplier.'
+    example_pf_xxl.action = 'Require soft-start (VFD) OR specify Ma/Mn ≤ 2.65'
+
+    context = {
+        'example_pf_standard': example_pf_standard,
+        'example_pf_xxl': example_pf_xxl,
+        'active_page': 'examples',
+        'formulas': FORMULAS,
+        **_crane_context(),
+    }
+    return render(request, 'calculator/worked_examples.html', context)
