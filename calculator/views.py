@@ -21,7 +21,7 @@ FORMULAS = {
     'section_2': 'Speed Calculations',
     'f1': {
         'latex': r'i_{\text{tot}} = i_{\text{gb}} \times i_{\text{slew}}',
-        'description': 'Total reduction ratio',
+        'description': 'Total reduction ratio combining gearbox and slewing ring',
         'vars': {
             'i_gb': 'Gearbox reduction ratio (:1)',
             'i_slew': 'Slewing-ring reduction ratio (:1)',
@@ -29,8 +29,8 @@ FORMULAS = {
         }
     },
     'f2': {
-        'latex': r'n_{\text{gm}} = \dfrac{n_{\text{mot}}}{i_{\text{gb}}}',
-        'description': 'GM output speed',
+        'latex': r'n_{\text{gm}} = \frac{n_{\text{mot}}}{i_{\text{gb}}}',
+        'description': 'GM output speed from motor speed and gearbox ratio',
         'vars': {
             'n_mot': 'Motor rated speed (rpm)',
             'i_gb': 'Gearbox reduction ratio (:1)',
@@ -38,8 +38,8 @@ FORMULAS = {
         }
     },
     'f3': {
-        'latex': r'n_{\text{slew}} = \dfrac{n_{\text{gm}}}{i_{\text{slew}}} = \dfrac{n_{\text{mot}}}{i_{\text{tot}}}',
-        'description': 'Crane slewing speed',
+        'latex': r'n_{\text{slew}} = \frac{n_{\text{gm}}}{i_{\text{slew}}} = \frac{n_{\text{mot}}}{i_{\text{tot}}}',
+        'description': 'Crane slewing speed (two equivalent forms)',
         'vars': {
             'n_gm': 'GM output speed (rpm)',
             'n_mot': 'Motor rated speed (rpm)',
@@ -51,8 +51,8 @@ FORMULAS = {
 
     'section_3': 'Power Consistency',
     'f4': {
-        'latex': r'\Delta P = \dfrac{\left| P - \dfrac{T_{\text{nom}} \times n_{\text{gm}}}{k} \right|}{P} \times 100\%',
-        'description': 'Power consistency check (limit: ≤ 5%)',
+        'latex': r'\Delta P = 100 \times \frac{\left| P - \frac{T_{\text{nom}} \times n_{\text{gm}}}{k} \right|}{P}',
+        'description': 'Power consistency deviation (acceptance: ≤ 5%)',
         'vars': {
             'P': 'Motor rated power (kW)',
             'T_nom': 'GM nominal torque (Nm)',
@@ -62,10 +62,10 @@ FORMULAS = {
         }
     },
 
-    'section_4': 'Ring Torques (GM Output → Ring)',
+    'section_4': 'Ring Torques (GM Output × CF)',
     'f5': {
         'latex': r'M_{S2} = T_{\text{nom}} \times CF',
-        'description': 'Ring running/nominal torque',
+        'description': 'Ring nominal/running torque',
         'vars': {
             'T_nom': 'GM nominal torque (Nm)',
             'CF': 'Combined factor (–)',
@@ -74,7 +74,7 @@ FORMULAS = {
     },
     'f6': {
         'latex': r'M_{\text{PU}} = T_{\text{pu}} \times CF',
-        'description': 'Ring pull-up torque (required: ≥ 0.9 × M_rated)',
+        'description': 'Ring pull-up torque (constraint: ≥ 0.9 × M_rated)',
         'vars': {
             'T_pu': 'GM pull-up torque (Nm)',
             'CF': 'Combined factor (–)',
@@ -83,16 +83,16 @@ FORMULAS = {
     },
     'f7': {
         'latex': r'M_{\text{start}} = T_{\text{start}} \times CF',
-        'description': 'Ring start/breakaway torque (required: M_rated ≤ M_start ≤ M_max)',
+        'description': 'Ring starting torque (constraint: M_rated ≤ M_start ≤ M_max)',
         'vars': {
-            'T_start': 'GM start torque (Nm)',
+            'T_start': 'GM starting torque (Nm)',
             'CF': 'Combined factor (–)',
-            'M_start': 'Ring start torque (Nm)',
+            'M_start': 'Ring starting torque (Nm)',
         }
     },
     'f8': {
         'latex': r'M_{\text{peak}} = T_{\text{peak}} \times CF',
-        'description': 'Ring peak torque (required: M_peak ≤ M_max)',
+        'description': 'Ring peak torque (constraint: M_peak ≤ M_max)',
         'vars': {
             'T_peak': 'GM peak torque (Nm)',
             'CF': 'Combined factor (–)',
@@ -100,19 +100,19 @@ FORMULAS = {
         }
     },
 
-    'section_5': 'Derived Limits',
+    'section_5': 'Derived Limits (Reverse Calculations)',
     'f9': {
-        'latex': r'T_{\text{gm,nom,req}} = \dfrac{M_{\text{rated}}}{CF}',
-        'description': 'Required GM nominal torque',
+        'latex': r'T_{\text{gm,nom,req}} = \frac{M_{\text{rated}}}{CF}',
+        'description': 'Required GM nominal torque to meet ring rated capacity',
         'vars': {
-            'M_rated': 'Ring nominal torque (Nm)',
+            'M_rated': 'Ring rated torque (Nm)',
             'CF': 'Combined factor (–)',
             'T_gm_nom_req': 'Required GM nominal torque (Nm)',
         }
     },
     'f10': {
-        'latex': r'T_{\text{gm,start,max}} = \dfrac{M_{\text{max}}}{CF}',
-        'description': 'Maximum permissible GM starting torque',
+        'latex': r'T_{\text{gm,start,max}} = \frac{M_{\text{max}}}{CF}',
+        'description': 'Maximum permissible GM starting torque before ring failure',
         'vars': {
             'M_max': 'Ring maximum torque (Nm)',
             'CF': 'Combined factor (–)',
