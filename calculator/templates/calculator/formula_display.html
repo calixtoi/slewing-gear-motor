@@ -1,0 +1,404 @@
+{# Formula display template - clean, readable breakdown without raw LaTeX #}
+
+<style>
+  .formula-display {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .formula-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0056b3;
+    margin-bottom: 0.5rem;
+  }
+
+  .formula-equation {
+    background: #f5f7fa;
+    border-left: 4px solid #0056b3;
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  .variables-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+  }
+
+  .variables-title {
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .variable-item {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 1.5rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #e0e0e0;
+    align-items: center;
+  }
+
+  .variable-item:last-child {
+    border-bottom: none;
+  }
+
+  .variable-symbol {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: #0056b3;
+    font-size: 1.1rem;
+  }
+
+  .variable-description {
+    color: #666;
+    font-size: 0.95rem;
+  }
+
+  .variable-value {
+    background: #e7f3ff;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #0056b3;
+    white-space: nowrap;
+  }
+
+  .breakdown-steps {
+    margin: 2rem 0;
+  }
+
+  .breakdown-step {
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border-left: 4px solid #007bff;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+
+  .step-number {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 32px;
+    font-weight: 700;
+    margin-right: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .step-description {
+    color: #666;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+  }
+
+  .step-expression {
+    background: white;
+    border: 1px solid #e0e0e0;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.8rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+  }
+
+  .step-expression-label {
+    color: #999;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .step-expression-text {
+    color: #333;
+    font-weight: 600;
+  }
+
+  .step-values {
+    background: #fffbf0;
+    padding: 0.8rem;
+    border-radius: 4px;
+    border-left: 3px solid #ffa500;
+    margin-bottom: 0.8rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+  }
+
+  .step-values-label {
+    color: #999;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .step-values-text {
+    color: #333;
+  }
+
+  .step-result {
+    background: #e8f5e9;
+    padding: 0.8rem;
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #28a745;
+  }
+
+  .step-result-label {
+    color: #999;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .final-result {
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  .final-result-symbol {
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .final-result-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #28a745;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 0.5rem;
+  }
+
+  .final-result-unit {
+    font-size: 1.1rem;
+    color: #999;
+    margin-bottom: 1rem;
+  }
+
+  .final-result-interpretation {
+    color: #666;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .final-result-acceptance {
+    background: white;
+    padding: 0.8rem;
+    border-radius: 4px;
+    color: #666;
+  }
+
+  .acceptance-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .acceptance-value {
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0056b3;
+  }
+
+  .status-pass {
+    background: #e8f5e9;
+    border-left: 4px solid #28a745;
+    padding: 1rem;
+    border-radius: 4px;
+    color: #28a745;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+
+  .status-fail {
+    background: #ffebee;
+    border-left: 4px solid #dc3545;
+    padding: 1rem;
+    border-radius: 4px;
+    color: #dc3545;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+
+  .simple-calculation {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .calculation-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  .calculation-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .calculation-label {
+    color: #999;
+    font-size: 0.9rem;
+    min-width: 100px;
+  }
+
+  .calculation-expr {
+    color: #333;
+    font-weight: 600;
+    flex-grow: 1;
+  }
+
+  .arrow {
+    color: #007bff;
+    font-weight: 700;
+  }
+
+</style>
+
+{# Example usage in template:
+   {% include 'calculator/formula_display.html' with display=power_consistency_display %}
+#}
+
+{% if display %}
+<div class="formula-display">
+  <div class="formula-title">
+    {{ display.formula_name }}
+  </div>
+
+  {# Main formula #}
+  {% if display.formula_text %}
+  <div class="formula-equation">
+    {{ display.formula_text }}
+  </div>
+  {% endif %}
+
+  {# Variables section #}
+  {% if display.variables %}
+  <div class="variables-section">
+    <div class="variables-title">Where:</div>
+    {% for var in display.variables %}
+    <div class="variable-item">
+      <div class="variable-symbol">{{ var.symbol }}</div>
+      <div class="variable-description">{{ var.description }}</div>
+      <div class="variable-value">{{ var.value }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Breakdown steps #}
+  {% if display.breakdown %}
+  <div class="breakdown-steps">
+    {% for step in display.breakdown %}
+    <div class="breakdown-step">
+      <div>
+        <span class="step-number">{{ step.step }}</span>
+        <strong class="step-description">{{ step.description }}</strong>
+      </div>
+
+      <div class="step-expression">
+        <div class="step-expression-label">Expression:</div>
+        <div class="step-expression-text">{{ step.expression }}</div>
+      </div>
+
+      <div class="step-values">
+        <div class="step-values-label">Substitute values:</div>
+        <div class="step-values-text">{{ step.values }}</div>
+      </div>
+
+      <div class="step-result">
+        <div class="step-result-label">Result:</div>
+        {{ step.result }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% elif display.calculation %}
+  {# Simple one-step calculation #}
+  <div class="simple-calculation">
+    <div class="calculation-row">
+      <span class="calculation-label">Formula:</span>
+      <span class="calculation-expr">{{ display.calculation.expression }}</span>
+    </div>
+    <div class="calculation-row">
+      <span class="calculation-label">Substitute:</span>
+      <span class="calculation-expr">{{ display.calculation.substitution }}</span>
+    </div>
+    <div class="calculation-row">
+      <span class="calculation-label"></span>
+      <span class="arrow">=</span>
+      <span class="calculation-expr"><strong>{{ display.calculation.result }}</strong></span>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Final result #}
+  {% if display.final_result %}
+  <div class="final-result">
+    <div class="final-result-symbol">{{ display.final_result.symbol }}</div>
+    <div class="final-result-value">
+      {{ display.final_result.value|floatformat:2 }}
+    </div>
+    <div class="final-result-unit">{{ display.final_result.unit }}</div>
+    <div class="final-result-interpretation">
+      {{ display.final_result.interpretation }}
+    </div>
+
+    {% if display.final_result.acceptance %}
+    <div class="final-result-acceptance">
+      <div class="acceptance-label">Acceptance Criterion:</div>
+      <div class="acceptance-value">{{ display.final_result.acceptance }}</div>
+    </div>
+    {% endif %}
+
+    {% if display.final_result.status %}
+    <div class="status-{{ display.final_result.status|lower }}">
+      ✓ {{ display.final_result.status }}
+    </div>
+    {% endif %}
+
+    {% if display.final_result.target %}
+    <div style="margin-top: 1rem; padding: 0.8rem; background: #f5f5f5; border-radius: 4px;">
+      <div style="font-size: 0.85rem; color: #999; margin-bottom: 0.3rem;">Target value:</div>
+      <div style="font-family: 'Courier New', monospace; color: #333; font-weight: 600;">
+        {{ display.final_result.target|floatformat:4 }} rpm
+      </div>
+      <div style="font-size: 0.85rem; color: #999; margin-top: 0.3rem;">
+        Deviation: {{ display.final_result.deviation_percent|floatformat:2 }}%
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}

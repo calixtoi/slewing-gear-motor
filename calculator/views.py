@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Motor, RingSystem
 from .services import evaluate, verdict
 from .formula_builder import SymbolicFormula
+from .formula_display import FormulaDisplay
 
 FORMULAS = {
     'title': 'Motor Validation Formulas',
@@ -344,13 +345,35 @@ def formula_verifier(request):
 
             # Build step-by-step calculation breakdown
             calculation_steps = build_calculation_steps(motor_input, ring_system, result)
+
+            # Build clean formula displays (no raw LaTeX)
+            n_gm = motor_input['n_mot'] / motor_input['i_gb']
+            i_tot = motor_input['i_gb'] * ring_system.i_slew
+            n_slew = motor_input['n_mot'] / i_tot
+
+            formula_displays = {
+                'total_reduction': FormulaDisplay.total_reduction_breakdown(
+                    motor_input['i_gb'], ring_system.i_slew
+                ),
+                'gm_output_speed': FormulaDisplay.gm_output_speed_breakdown(
+                    motor_input['n_mot'], motor_input['i_gb']
+                ),
+                'slewing_speed': FormulaDisplay.slewing_speed_breakdown(
+                    motor_input['n_mot'], i_tot, ring_system.n_slew_tgt
+                ),
+                'power_consistency': FormulaDisplay.power_consistency_breakdown(
+                    motor_input['P'], motor_input['T_nom'], n_gm, ring_system.k
+                ),
+            }
         except (ValueError, TypeError) as e:
             result = {'error': f'Invalid input: {str(e)}'}
+            formula_displays = {}
 
     return render(request, 'calculator/formula_verifier.html', {
         'ring_systems': ring_systems,
         'result': result,
         'calculation_steps': calculation_steps,
+        'formula_displays': formula_displays,
         'ring_system': ring_system,
         'active_page': 'formulas',
         **FORMULAS,

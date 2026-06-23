@@ -302,6 +302,30 @@
     </button>
   </form>
 
+  <!-- Clean Formula Displays -->
+  {% if formula_displays %}
+    <hr class="my-4">
+    <div class="result-section">
+      <h6 class="mb-4"><i class="bi bi-calculator"></i> Formula Breakdown (Clean Display)</h6>
+
+      {% if formula_displays.total_reduction %}
+        {% include 'calculator/formula_display.html' with display=formula_displays.total_reduction %}
+      {% endif %}
+
+      {% if formula_displays.gm_output_speed %}
+        {% include 'calculator/formula_display.html' with display=formula_displays.gm_output_speed %}
+      {% endif %}
+
+      {% if formula_displays.slewing_speed %}
+        {% include 'calculator/formula_display.html' with display=formula_displays.slewing_speed %}
+      {% endif %}
+
+      {% if formula_displays.power_consistency %}
+        {% include 'calculator/formula_display.html' with display=formula_displays.power_consistency %}
+      {% endif %}
+    </div>
+  {% endif %}
+
   <!-- Step-by-Step Calculation -->
   {% if calculation_steps %}
     <hr class="my-4">
