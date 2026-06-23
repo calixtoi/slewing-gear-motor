@@ -1,5 +1,5 @@
 from django import forms
-from .models import MotorCalculation
+from .models import RingSystem
 
 
 FLOAT_WIDGET     = {'class': 'form-control form-control-sm', 'step': 'any'}
@@ -218,7 +218,7 @@ class SaveCalculationForm(forms.Form):
         }),
     )
     crane_type = forms.ChoiceField(
-        choices=MotorCalculation.CRANE_CHOICES,
+        choices=RingSystem.SYSTEM_CHOICES,
         label='Crane type',
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
     )
@@ -249,9 +249,9 @@ class TextDatasheetForm(forms.Form):
         }),
     )
     crane_type = forms.ChoiceField(
-        choices=MotorCalculation.CRANE_CHOICES,
+        choices=RingSystem.SYSTEM_CHOICES,
         label='Crane Type',
-        initial=MotorCalculation.STANDARD_PF,
+        initial=RingSystem.STANDARD_PF,
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
     )
     price_prototype = forms.DecimalField(
@@ -307,9 +307,9 @@ class DatasheetUploadForm(forms.Form):
         }),
     )
     crane_type = forms.ChoiceField(
-        choices=MotorCalculation.CRANE_CHOICES,
+        choices=RingSystem.SYSTEM_CHOICES,
         label='Crane Type',
-        initial=MotorCalculation.STANDARD_PF,
+        initial=RingSystem.STANDARD_PF,
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
     )
     price_prototype = forms.DecimalField(

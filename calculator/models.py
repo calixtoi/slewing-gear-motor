@@ -1,158 +1,185 @@
 from django.db import models
 
 
-class MotorCalculation(models.Model):
+# Backward compatibility: alias for legacy code
+MotorCalculation = None  # Will be set below
+
+
+class RingSystem(models.Model):
+    """Fixed system parameters for PF Standard and PF-XXL crane variants."""
+
     STANDARD_PF = 'standard_pf'
     PF_XXL = 'pf_xxl'
-    CRANE_CHOICES = [
-        (STANDARD_PF, 'Standard PF Crane'),
-        (PF_XXL, 'PF-XXL'),
+    SYSTEM_CHOICES = [
+        (STANDARD_PF, 'PF Standard (ELW 597EM)'),
+        (PF_XXL, 'PF-XXL (TGB P26-04)'),
     ]
 
-    # ── Metadata ─────────────────────────────────────────────────────────────
-    supplier_name = models.CharField(max_length=200)
-    crane_type = models.CharField(max_length=20, choices=CRANE_CHOICES)
-    saved_at = models.DateTimeField(auto_now_add=True)
-    price_prototype = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    price_series = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    system_type = models.CharField(max_length=20, choices=SYSTEM_CHOICES, unique=True)
+    ring_model = models.CharField(max_length=100, help_text='e.g., ELW 597EM or TGB P26-04')
 
-    # ── Calculation inputs ────────────────────────────────────────────────────
-    crane_torque_max = models.FloatField()
-    crane_torque_nom = models.FloatField(null=True, blank=True)
-    worm_ratio = models.FloatField()
-    worm_efficiency = models.FloatField()
-    motor_speed = models.FloatField()
-    motor_rated_torque = models.FloatField()
-    starting_factor = models.FloatField()
-    gearbox_output_speed = models.FloatField()
-    bevel_efficiency = models.FloatField(default=0.95)
+    # Fixed parameters
+    i_slew = models.FloatField(help_text='Slewing-ring reduction ratio (i_slew)')
+    eta_slew = models.FloatField(default=0.40, help_text='Slewing-ring efficiency')
+    CF = models.FloatField(help_text='Combined factor = i_slew × η_slew')
+    M_max = models.FloatField(help_text='Ring maximum (structural) torque (Nm)')
+    M_rated = models.FloatField(help_text='Ring nominal/rated operating torque (Nm)')
 
-    # ── Optional supplier comparison inputs ───────────────────────────────────
-    supplier_motor_power_kw = models.FloatField(null=True, blank=True)
-    supplier_motor_rated_torque = models.FloatField(null=True, blank=True)
-    supplier_motor_starting_torque = models.FloatField(null=True, blank=True)
-    supplier_gearbox_rated_torque = models.FloatField(null=True, blank=True)
-    supplier_bevel_ratio = models.FloatField(null=True, blank=True)
-    supplier_worm_ratio = models.FloatField(null=True, blank=True)
+    # Speed windows
+    n_slew_min = models.FloatField(help_text='Min crane slewing speed (rpm)')
+    n_slew_max = models.FloatField(help_text='Max crane slewing speed (rpm)')
+    n_slew_tgt = models.FloatField(help_text='Target crane slewing speed (rpm)')
+    n_gm_min = models.FloatField(help_text='Min GM output speed (rpm)')
+    n_gm_max = models.FloatField(help_text='Max GM output speed (rpm)')
 
-    # ── Motor physical specs (from datasheet or manual entry) ────────────────
-    spec_frame_material   = models.CharField(max_length=200, blank=True, default='')
-    spec_output_flange    = models.CharField(max_length=100, blank=True, default='')
-    spec_shaft            = models.CharField(max_length=100, blank=True, default='')
-    spec_cooling_method   = models.CharField(max_length=100, blank=True, default='')
-    spec_ip_rating        = models.CharField(max_length=50,  blank=True, default='')
-    spec_ambient_temp     = models.CharField(max_length=100, blank=True, default='')
-    spec_coating          = models.CharField(max_length=200, blank=True, default='')
-    spec_top_color        = models.CharField(max_length=100, blank=True, default='')
-    spec_heater           = models.CharField(max_length=100, blank=True, default='')
-    spec_insulation_class = models.CharField(max_length=20,  blank=True, default='')
-    spec_duty_cycle       = models.CharField(max_length=50,  blank=True, default='')
-    spec_painting         = models.CharField(max_length=500, blank=True, default='')
-    spec_motor_certificate = models.CharField(max_length=200, blank=True, default='')
-    spec_weight_kg        = models.FloatField(null=True, blank=True)
-    spec_efficiency_class = models.CharField(max_length=20,  blank=True, default='')
-    spec_voltage          = models.CharField(max_length=100, blank=True, default='')
+    # Constants
+    k = models.FloatField(default=9549.3, help_text='Torque constant = 60000/(2π)')
 
-    # ── Key results (stored for list display; detail re-runs engine) ──────────
-    torque_check = models.CharField(max_length=30)
-    torque_margin = models.FloatField()
-    motor_power_kw = models.FloatField()
-
-    # ── System parameters recorded at calculation time ─────────────────────────
-    i_slew           = models.FloatField(default=0)
-    eta_slew         = models.FloatField(default=0.40)
-    CF               = models.FloatField(default=0)
-    T_crane_lim      = models.FloatField(default=0)
-    T_gm_start_MAX   = models.FloatField(default=0)
-    gm_out_speed_rpm = models.FloatField(default=0)
-    gm_out_nom_nm    = models.FloatField(default=0)
-    gm_out_start_nm  = models.FloatField(default=0)
-    Mk_Mn            = models.FloatField(default=3.40)
-
-    # ── Crane output results ──────────────────────────────────────────────────
-    n_crane  = models.FloatField(default=0)
-    M_Nenn   = models.FloatField(default=0)
-    Ma_Max   = models.FloatField(default=0)
-    Mk_Max   = models.FloatField(default=0)
-    overall_pass = models.BooleanField(default=False)
-
-    # ── Physical specification fields ─────────────────────────────────────────
-    spec_motor_type       = models.CharField(max_length=200, blank=True)
-    spec_frame_material   = models.CharField(max_length=100, blank=True)
-    spec_input_flange_mm  = models.FloatField(null=True, blank=True)
-    spec_output_flange    = models.CharField(max_length=100, blank=True)
-    spec_output_shaft_mm  = models.FloatField(null=True, blank=True)
-    spec_shaft_length_mm  = models.FloatField(null=True, blank=True)
-    spec_cooling_method   = models.CharField(max_length=100, blank=True)
-    spec_ip_rating        = models.CharField(max_length=20,  blank=True)
-    spec_insulation_class = models.CharField(max_length=20,  blank=True)
-    spec_efficiency_class = models.CharField(max_length=20,  blank=True)
-    spec_duty_cycle       = models.CharField(max_length=50,  blank=True)
-    spec_ambient_temp_min = models.FloatField(null=True, blank=True)
-    spec_ambient_temp_max = models.FloatField(null=True, blank=True)
-    spec_voltage_400_50   = models.CharField(max_length=20, blank=True)
-    spec_voltage_400_60   = models.CharField(max_length=20, blank=True)
-    spec_voltage_480_60   = models.CharField(max_length=20, blank=True)
-    spec_voltage_690_50   = models.CharField(max_length=20, blank=True)
-    spec_voltage_690_60   = models.CharField(max_length=20, blank=True)
-    spec_heater_vdc       = models.FloatField(null=True, blank=True)
-    spec_coating_standard = models.CharField(max_length=100, blank=True)
-    spec_surface_prep     = models.CharField(max_length=100, blank=True)
-    spec_coating_ndft_um  = models.FloatField(null=True, blank=True)
-    spec_paint_color      = models.CharField(max_length=50,  blank=True)
-    spec_output_flange_coating = models.CharField(max_length=200, blank=True)
-    spec_fasteners        = models.CharField(max_length=100, blank=True)
-    spec_shaft_seal       = models.CharField(max_length=100, blank=True)
-    spec_nameplate        = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-saved_at']
+        ordering = ['system_type']
 
     def __str__(self):
-        return f"{self.supplier_name} ({self.get_crane_type_display()})"
+        return self.get_system_type_display()
 
     @property
-    def Ma_Mn_actual(self):
-        if self.gm_out_nom_nm:
-            return self.gm_out_start_nm / self.gm_out_nom_nm
-        return 0
+    def T_gm_nom_req(self):
+        """Derived: Required GM nominal torque."""
+        return self.M_rated / self.CF
 
     @property
-    def start_utilisation_pct(self):
-        if self.T_crane_lim:
-            return self.Ma_Max / self.T_crane_lim * 100
-        return 0
+    def T_gm_start_max(self):
+        """Derived: Maximum GM starting torque."""
+        return self.M_max / self.CF
 
-    @property
-    def nom_utilisation_pct(self):
-        if self.T_crane_lim:
-            return self.M_Nenn / self.T_crane_lim * 100
-        return 0
 
-    @property
-    def start_torque_margin_nm(self):
-        return self.T_crane_lim - self.Ma_Max
+class Motor(models.Model):
+    """Motor candidate for a ring system, with all datasheet inputs and calculation results."""
 
-    @property
-    def requires_soft_start(self):
-        return self.Ma_Max > self.T_crane_lim
+    ring_system = models.ForeignKey(RingSystem, on_delete=models.CASCADE, related_name='motors')
+
+    # Metadata
+    supplier = models.CharField(max_length=200, help_text='Motor supplier (e.g., Watt Drive, Z:systems)')
+    model = models.CharField(max_length=200, help_text='Motor model (e.g., EP2557M)')
+    gm_type = models.CharField(max_length=200, blank=True, help_text='Geared-motor type designation')
+    notes = models.TextField(blank=True, help_text='Any additional notes or context')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Drivetrain inputs
+    i_gb = models.FloatField(help_text='Gearbox reduction ratio')
+    n_mot = models.FloatField(help_text='Rated motor speed (rpm)')
+    P = models.FloatField(help_text='Rated motor power (kW)')
+
+    # Torques at GM output shaft (Nm)
+    T_nom = models.FloatField(help_text='GM nominal output torque (Nm)')
+    T_pu = models.FloatField(null=True, blank=True, help_text='GM pull-up / acceleration torque (Nm)')
+    T_start = models.FloatField(help_text='GM start / breakaway torque (Nm)')
+    T_peak = models.FloatField(help_text='GM peak / max torque (Nm)')
+
+    # Motor and gearbox limits
+    T_in_max = models.FloatField(null=True, blank=True, help_text='Permissible gearbox input torque (Nm)')
+    T_bd = models.FloatField(null=True, blank=True, help_text='Motor breakdown torque (Nm)')
+
+    # Physical specs
+    fB = models.FloatField(null=True, blank=True, help_text='Service factor')
+    duty = models.CharField(max_length=100, blank=True, help_text='Duty cycle (e.g., S2-12 min, S3-25%)')
+    flange = models.CharField(max_length=200, blank=True, help_text='Flange interface (e.g., □150 / Ø32 k6×50)')
+    voltage = models.CharField(max_length=100, blank=True, help_text='Supply voltage/frequency')
+    IP = models.CharField(max_length=20, blank=True, help_text='IP protection class')
+    insulation = models.CharField(max_length=20, blank=True, help_text='Insulation class')
+    heater = models.CharField(max_length=100, blank=True, help_text='Standstill heater')
+    temp = models.CharField(max_length=100, blank=True, help_text='Ambient temperature range')
+    coating = models.CharField(max_length=100, blank=True, help_text='Coating standard')
+    frame = models.CharField(max_length=100, blank=True, help_text='Frame material')
+    cooling = models.CharField(max_length=100, blank=True, help_text='Cooling method')
+    start_method = models.CharField(max_length=100, blank=True, default='DOL', help_text='Starting method (DOL, VFD, etc.)')
+
+    # Calculated results
+    i_tot = models.FloatField(null=True, blank=True, help_text='Total reduction ratio = i_gb × i_slew')
+    n_gm = models.FloatField(null=True, blank=True, help_text='GM output speed (rpm)')
+    n_slew = models.FloatField(null=True, blank=True, help_text='Crane slewing speed (rpm)')
+    dP = models.FloatField(null=True, blank=True, help_text='Power consistency (fraction)')
+
+    # Ring-level torques
+    M_S2 = models.FloatField(null=True, blank=True, help_text='Ring running torque (Nm)')
+    M_PU = models.FloatField(null=True, blank=True, help_text='Ring pull-up torque (Nm)')
+    M_start = models.FloatField(null=True, blank=True, help_text='Ring start/breakaway torque (Nm)')
+    M_peak = models.FloatField(null=True, blank=True, help_text='Ring peak torque (Nm)')
+
+    # Validation results (JSON dict of check results)
+    checks_json = models.TextField(blank=True, default='{}', help_text='JSON dict of 11-point checks')
+    verdict = models.CharField(
+        max_length=50,
+        choices=[
+            ('FITS', 'FITS (11/11)'),
+            ('FITS_REVIEW', 'FITS — minor review'),
+            ('DOES_NOT_FIT', 'DOES NOT FIT'),
+        ],
+        blank=True,
+        help_text='Final verdict'
+    )
+    passed_count = models.IntegerField(default=0, help_text='Number of checks passed (0-11)')
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [['ring_system', 'supplier', 'model']]
+
+    def __str__(self):
+        return f"{self.supplier} {self.model} ({self.ring_system})"
 
     def recalculate(self):
-        from .engine import drivetrain_sizing
-        return drivetrain_sizing(
-            crane_torque_max=self.crane_torque_max,
-            crane_torque_nom=self.crane_torque_nom,
-            worm_ratio=self.worm_ratio,
-            worm_efficiency=self.worm_efficiency,
-            motor_speed=self.motor_speed,
-            gearbox_output_speed=self.gearbox_output_speed,
-            motor_rated_torque=self.motor_rated_torque,
-            starting_factor=self.starting_factor,
-            bevel_efficiency=self.bevel_efficiency,
-            supplier_motor_power_kw=self.supplier_motor_power_kw,
-            supplier_motor_rated_torque=self.supplier_motor_rated_torque,
-            supplier_motor_starting_torque=self.supplier_motor_starting_torque,
-            supplier_gearbox_rated_torque=self.supplier_gearbox_rated_torque,
-            supplier_bevel_ratio=self.supplier_bevel_ratio,
-            supplier_worm_ratio=self.supplier_worm_ratio,
-        )
+        """Run the full 11-point evaluation and store results."""
+        from .services import evaluate, verdict as compute_verdict
+
+        # Prepare input dict
+        motor_input = {
+            'i_gb': self.i_gb,
+            'n_mot': self.n_mot,
+            'P': self.P,
+            'T_nom': self.T_nom,
+            'T_pu': self.T_pu,
+            'T_start': self.T_start,
+            'T_peak': self.T_peak,
+            'T_in_max': self.T_in_max,
+            'T_bd': self.T_bd,
+            'fB': self.fB,
+            'duty': self.duty,
+            'flange': self.flange,
+        }
+
+        # Evaluate
+        result = evaluate(motor_input, self.ring_system)
+
+        # Store results
+        self.i_tot = result.get('i_tot')
+        self.n_gm = result.get('n_gm')
+        self.n_slew = result.get('n_slew')
+        self.dP = result.get('dP')
+        self.M_S2 = result.get('M_S2')
+        self.M_PU = result.get('M_PU')
+        self.M_start = result.get('M_start')
+        self.M_peak = result.get('M_peak')
+
+        # Store checks
+        import json
+        self.checks_json = json.dumps(result.get('checks', {}))
+
+        # Compute verdict
+        checks = result.get('checks', {})
+        self.verdict = compute_verdict(checks)
+        self.passed_count = sum(1 for c in checks.values() if c['status'] == 'PASS')
+
+        self.save()
+        return result
+
+    @property
+    def checks(self):
+        """Parse checks_json into a dict."""
+        import json
+        try:
+            return json.loads(self.checks_json)
+        except (json.JSONDecodeError, TypeError):
+            return {}
