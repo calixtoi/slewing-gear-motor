@@ -22,7 +22,7 @@ from .engine import (
     ETA_GB_ASSUMED,
     SAFETY_FACTOR,
 )
-from .models import MotorCalculation
+from .models import Motor, RingSystem
 from .pdf_parser import (
     parse_datasheet, parse_text, check_compliance, specs_to_form_initial,
     extract_motor_params, extract_motor_params_from_pdf, MOTOR_PARAM_LABELS,
@@ -422,33 +422,9 @@ def save_calculation(request):
         price_proto  = raw_proto  if raw_proto  else None
         price_series = raw_series if raw_series else None
 
-        spec_data = _spec_fields_from_form(sd)
-
-        MotorCalculation.objects.create(
-            supplier_name=save_form.cleaned_data['supplier_name'],
-            crane_type=save_form.cleaned_data['crane_type'],
-            crane_torque_max=d['crane_torque_max'],
-            crane_torque_nom=d.get('crane_torque_nom'),
-            worm_ratio=d['worm_ratio'],
-            worm_efficiency=d['worm_efficiency'],
-            motor_speed=d['motor_speed'],
-            motor_rated_torque=d['motor_rated_torque'],
-            starting_factor=d['starting_factor'],
-            bevel_efficiency=d['bevel_efficiency'],
-            gearbox_output_speed=n_gear_out_eff,
-            supplier_motor_power_kw=d.get('supplier_motor_power_kw'),
-            supplier_motor_rated_torque=d.get('supplier_motor_rated_torque'),
-            supplier_motor_starting_torque=d.get('supplier_motor_starting_torque'),
-            supplier_gearbox_rated_torque=d.get('supplier_gearbox_rated_torque'),
-            supplier_bevel_ratio=d.get('supplier_bevel_ratio'),
-            supplier_worm_ratio=d.get('supplier_worm_ratio'),
-            price_prototype=price_proto,
-            price_series=price_series,
-            torque_check=results['torque_check'],
-            torque_margin=results['torque_margin'],
-            motor_power_kw=results['motor_power_kw'],
-            **spec_data,
-        )
+        # TODO: Refactor save to use new Motor model with Ring System FK
+        # spec_data = _spec_fields_from_form(sd)
+        # Motor.objects.create(...) with new schema
         return redirect('suppliers')
 
     results = None
@@ -485,23 +461,23 @@ def save_calculation(request):
 
 
 def suppliers(request, crane_filter=None):
-    qs = MotorCalculation.objects.all()
+    qs = Motor.objects.select_related('ring_system').all()
     if crane_filter == 'standard_pf':
-        qs = qs.filter(crane_type=MotorCalculation.STANDARD_PF)
+        qs = qs.filter(ring_system__system_type=RingSystem.STANDARD_PF)
     elif crane_filter == 'pf_xxl':
-        qs = qs.filter(crane_type=MotorCalculation.PF_XXL)
+        qs = qs.filter(ring_system__system_type=RingSystem.PF_XXL)
     return render(request, 'calculator/suppliers.html', {
-        'calculations': qs,
+        'motors': qs,
         'active_page': 'suppliers',
         'crane_filter': crane_filter,
     })
 
 
 def supplier_detail(request, pk):
-    calc = get_object_or_404(MotorCalculation, pk=pk)
-    results = calc.recalculate()
+    motor = get_object_or_404(Motor, pk=pk)
+    results = motor.recalculate()
     return render(request, 'calculator/supplier_detail.html', {
-        'calc': calc,
+        'motor': motor,
         'results': results,
         'active_page': 'suppliers',
         **FORMULAS,
@@ -509,9 +485,9 @@ def supplier_detail(request, pk):
 
 
 def delete_calculation(request, pk):
-    calc = get_object_or_404(MotorCalculation, pk=pk)
+    motor = get_object_or_404(Motor, pk=pk)
     if request.method == 'POST':
-        calc.delete()
+        motor.delete()
     return redirect('suppliers')
 
 
@@ -605,13 +581,13 @@ def requirements(request):
 
 def comparison(request):
     crane_filter = request.GET.get('crane', None)
-    qs = MotorCalculation.objects.all()
+    qs = Motor.objects.select_related('ring_system').all()
     if crane_filter == 'standard_pf':
-        qs = qs.filter(crane_type=MotorCalculation.STANDARD_PF)
+        qs = qs.filter(ring_system__system_type=RingSystem.STANDARD_PF)
     elif crane_filter == 'pf_xxl':
-        qs = qs.filter(crane_type=MotorCalculation.PF_XXL)
+        qs = qs.filter(ring_system__system_type=RingSystem.PF_XXL)
     return render(request, 'calculator/comparison.html', {
-        'calculations': qs,
+        'motors': qs,
         'crane_filter': crane_filter,
         'active_page': 'comparison',
     })
