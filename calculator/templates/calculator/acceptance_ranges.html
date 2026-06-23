@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceptance Ranges</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { padding: 1.5rem; }
+    .crane-section { margin-bottom: 3rem; }
+    .crane-header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 2rem; border-radius: 8px 8px 0 0; }
+    .crane-header h4 { margin: 0; font-weight: 700; }
+    .crane-header p { margin: 0.5rem 0 0 0; font-size: 0.95rem; opacity: 0.9; }
+    .range-table { background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .range-row { border-bottom: 1px solid #e0e0e0; padding: 1rem 0; display: grid; grid-template-columns: 200px 1fr 1fr; gap: 2rem; align-items: center; }
+    .range-row:last-child { border-bottom: none; }
+    .range-label { font-weight: 600; color: #333; }
+    .range-value { background: #f8f9fa; padding: 1rem; border-radius: 4px; border-left: 4px solid #007bff; font-family: 'Courier New', monospace; }
+    .range-check { background: #e7f3ff; padding: 1rem; border-radius: 4px; border-left: 4px solid #0056b3; }
+    .badge-min { background: #28a745; }
+    .badge-max { background: #dc3545; }
+    .badge-target { background: #ffc107; color: #333; }
+    .table-striped tbody tr:nth-of-type(odd) { background-color: #f8f9fa; }
+    .range-table table th { background: #f8f9fa; font-weight: 600; border: none; padding: 1rem; }
+    .range-table table td { padding: 0.75rem; vertical-align: middle; }
+    .code-value { background: #f0f0f0; padding: 0.3rem 0.6rem; border-radius: 3px; font-family: 'Courier New', monospace; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <h5 class="mb-4"><i class="bi bi-check2-square"></i> Acceptance Ranges & Motor Requirements</h5>
+
+  {% for system_type, data in acceptance_data.items %}
+    <div class="crane-section">
+      <div class="crane-header">
+        <h4><i class="bi bi-ring"></i> {{ data.system.get_system_type_display }}</h4>
+        <p>Ring Model: {{ data.system.ring_model }} | CF = {{ data.system.CF }}</p>
+      </div>
+
+      <div class="range-table">
+        <!-- System Constants -->
+        <h6 class="mt-3 mb-3"><i class="bi bi-sliders"></i> System Constants (Fixed)</h6>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Value</th>
+              <th>Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>i_slew</strong> (slewing reduction)</td>
+              <td><span class="code-value">{{ data.system.i_slew }}</span></td>
+              <td>:1</td>
+            </tr>
+            <tr>
+              <td><strong>CF</strong> (combined factor)</td>
+              <td><span class="code-value">{{ data.system.CF }}</span></td>
+              <td>–</td>
+            </tr>
+            <tr>
+              <td><strong>M_rated</strong> (ring nominal)</td>
+              <td><span class="code-value">{{ data.M_rated|floatformat:0 }}</span></td>
+              <td>Nm</td>
+            </tr>
+            <tr>
+              <td><strong>M_max</strong> (ring max)</td>
+              <td><span class="code-value">{{ data.M_max|floatformat:0 }}</span></td>
+              <td>Nm</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Derived Limits -->
+        <h6 class="mt-4 mb-3"><i class="bi bi-arrow-repeat"></i> Derived Acceptance Limits</h6>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>GM Torque Requirement</th>
+              <th>Acceptable Range</th>
+              <th>Formula</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>T_nom</strong> (nominal)</td>
+              <td><span class="badge badge-min">≥ {{ data.T_gm_nom_req|floatformat:1 }} Nm</span></td>
+              <td>M_rated / CF</td>
+            </tr>
+            <tr>
+              <td><strong>T_pu</strong> (pull-up)</td>
+              <td><span class="badge badge-min">≥ {{ data.T_gm_pu_min|floatformat:1 }} Nm</span></td>
+              <td>0.9 × M_rated / CF</td>
+            </tr>
+            <tr>
+              <td><strong>T_start</strong> (start)</td>
+              <td>
+                <span class="badge badge-min">≥ {{ data.T_gm_start_min|floatformat:1 }} Nm</span>
+                <span class="badge badge-max">≤ {{ data.T_gm_start_max|floatformat:1 }} Nm</span>
+              </td>
+              <td>[M_rated/CF, M_max/CF]</td>
+            </tr>
+            <tr>
+              <td><strong>T_peak</strong> (peak)</td>
+              <td><span class="badge badge-max">≤ {{ data.T_gm_peak_max|floatformat:1 }} Nm</span></td>
+              <td>M_max / CF</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Speed Requirements -->
+        <h6 class="mt-4 mb-3"><i class="bi bi-speedometer2"></i> Speed Requirements</h6>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Speed</th>
+              <th>Acceptable Range</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>n_gm</strong> (GM output)</td>
+              <td>
+                <span class="badge badge-min">≥ {{ data.n_gm_min }} rpm</span>
+                <span class="badge badge-max">≤ {{ data.n_gm_max }} rpm</span>
+              </td>
+              <td>Window for gearbox output speed</td>
+            </tr>
+            <tr>
+              <td><strong>n_slew</strong> (crane)</td>
+              <td>
+                <span class="badge badge-min">≥ {{ data.n_slew_min }} rpm</span>
+                <span class="badge badge-max">≤ {{ data.n_slew_max }} rpm</span>
+              </td>
+              <td>Window for crane slewing speed</td>
+            </tr>
+            <tr>
+              <td><strong>n_slew</strong> target</td>
+              <td><span class="badge badge-target">{{ data.n_slew_tgt }} rpm ±10%</span></td>
+              <td>Nominal operating point</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Typical Motor Ratios -->
+        <h6 class="mt-4 mb-3"><i class="bi bi-gear"></i> Typical Motor Specifications</h6>
+        <p class="text-muted small mb-3">For standard 4-pole induction motors (1365–1415 rpm rated speed):</p>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Specification</th>
+              <th>Typical Range</th>
+              <th>Formula / Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>n_mot</strong> (motor speed)</td>
+              <td>
+                <span class="code-value">1365</span> –
+                <span class="code-value">1415</span> rpm
+              </td>
+              <td>4-pole induction motor @ 50/60 Hz</td>
+            </tr>
+            <tr>
+              <td><strong>i_gb</strong> (gearbox ratio)</td>
+              <td>
+                <span class="code-value">{{ data.typical_i_gb_min|floatformat:1 }}</span> –
+                <span class="code-value">{{ data.typical_i_gb_max|floatformat:1 }}</span>
+              </td>
+              <td>To achieve n_gm in acceptable window</td>
+            </tr>
+            <tr>
+              <td><strong>Power</strong></td>
+              <td>0.75 – 2.2 kW</td>
+              <td>Typical marine gearmotor sizes</td>
+            </tr>
+            <tr>
+              <td><strong>Ma/Mn ratio</strong> (start factor)</td>
+              <td>2.8 – 3.5</td>
+              <td>Starting torque / nominal torque</td>
+            </tr>
+            <tr>
+              <td><strong>Power consistency</strong></td>
+              <td><span class="code-value">ΔP ≤ 5%</span></td>
+              <td>Declared power vs. T×n product</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Ring Torque Acceptability -->
+        <h6 class="mt-4 mb-3"><i class="bi bi-diagram-2"></i> Ring Torque Acceptability Criteria</h6>
+        <div class="alert alert-info">
+          <strong><i class="bi bi-info-circle"></i> Check 6: Ring Start In Band</strong><br>
+          <small>
+            The ring starting torque M_start = T_start × CF must be <strong>bounded within the ring's operating envelope</strong>:
+            <br><br>
+            <span class="code-value">{{ data.M_rated|floatformat:0 }} ≤ M_start ≤ {{ data.M_max|floatformat:0 }} Nm</span>
+            <br><br>
+            <strong>Lower bound (M_rated):</strong> Motor must provide enough torque to operate the ring at rated conditions<br>
+            <strong>Upper bound (M_max):</strong> Starting torque must not exceed the ring's structural limit
+          </small>
+        </div>
+
+        <!-- Summary -->
+        <h6 class="mt-4 mb-3"><i class="bi bi-summary"></i> Quick Reference Summary</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div style="background: #e7f3ff; padding: 1.5rem; border-radius: 4px;">
+              <strong>GM Output Torques Required:</strong>
+              <ul class="small mb-0 mt-2">
+                <li>T_nom ≥ <span class="code-value">{{ data.T_gm_nom_req|floatformat:1 }} Nm</span></li>
+                <li>T_pu ≥ <span class="code-value">{{ data.T_gm_pu_min|floatformat:1 }} Nm</span> (90% of nominal)</li>
+                <li>T_start: <span class="code-value">{{ data.T_gm_start_min|floatformat:1 }}–{{ data.T_gm_start_max|floatformat:1 }} Nm</span></li>
+                <li>T_peak ≤ <span class="code-value">{{ data.T_gm_peak_max|floatformat:1 }} Nm</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="background: #fff3cd; padding: 1.5rem; border-radius: 4px;">
+              <strong>Speed Requirements:</strong>
+              <ul class="small mb-0 mt-2">
+                <li>n_gm: <span class="code-value">{{ data.n_gm_min }}–{{ data.n_gm_max }} rpm</span></li>
+                <li>n_slew: <span class="code-value">{{ data.n_slew_min }}–{{ data.n_slew_max }} rpm</span></li>
+                <li>Target: <span class="code-value">{{ data.n_slew_tgt }} rpm ±10%</span></li>
+                <li>ΔP: <span class="code-value">≤ 5%</span> power consistency</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  {% endfor %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

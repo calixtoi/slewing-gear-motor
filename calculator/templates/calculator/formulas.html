@@ -1,19 +1,205 @@
 {% extends 'calculator/base.html' %}
 
 {% block content %}
-<div class="card shadow-sm mb-3 p-3" style="background:rgba(255,255,255,0.97)">
-  <div class="d-flex align-items-center mb-1">
-    <h5 class="mb-0 text-dark"><i class="bi bi-journal-code me-2"></i>Formula Reference</h5>
-    <span class="text-muted small ms-3">
-      Complete drivetrain sizing chain: Motor → Bevel Gearbox → Worm Gear → Slewing Ring
-    </span>
-  </div>
-  <p class="text-muted small mb-0">
-    All formulas rendered with KaTeX. Use this page to verify any calculation step.
-  </p>
+<style>
+  .formula-card { background: white; border-radius: 4px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .formula-card .katex-display { margin: 1.5rem 0; }
+  .section-title { font-size: 1.3rem; font-weight: 600; margin-top: 2rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #007bff; color: #0056b3; }
+  .formula-description { color: #555; margin-bottom: 1rem; font-style: italic; }
+  .variables { background: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-top: 1rem; }
+  .variable-row { margin-bottom: 0.8rem; }
+  .variable-row strong { color: #0056b3; min-width: 80px; display: inline-block; }
+  .nav-tabs { border-bottom: 2px solid #dee2e6; }
+  .nav-link { color: #6c757d; border: none; border-bottom: 3px solid transparent; }
+  .nav-link.active { color: #0056b3; border-bottom-color: #0056b3; background: transparent; }
+</style>
+
+<div class="card shadow-sm mb-4 p-3" style="background:rgba(255,255,255,0.97)">
+  <h4 class="mb-0"><i class="bi bi-function"></i> Motor Validation Formulas</h4>
+  <p class="text-muted mb-0">Complete mathematical reference for all 11-point validation checks</p>
 </div>
 
-<div class="card shadow-sm p-3" style="background:rgba(255,255,255,0.97)">
-  {% include 'calculator/_formula_cards.html' %}
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" href="#formulas-tab" data-bs-toggle="tab">
+      <i class="bi bi-formulae"></i> Formulas
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#verify-tab" data-bs-toggle="tab">
+      <i class="bi bi-calculator"></i> Verify Values
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#acceptance-tab" data-bs-toggle="tab">
+      <i class="bi bi-check2-square"></i> Acceptance Ranges
+    </a>
+  </li>
+</ul>
+
+<!-- Formulas Tab -->
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="formulas-tab">
+
+    <!-- Combined Factor -->
+    <div class="section-title"><i class="bi bi-function"></i> Combined Factor</div>
+    <div class="formula-card">
+      <div class="formula-description">
+        Combined factor — total torque multiplication from GM output to ring
+      </div>
+      <div style="font-size: 1.2rem;">
+        $$CF = i_{\text{slew}} \times \eta_{\text{slew}}$$
+      </div>
+      <div class="variables">
+        <div class="variable-row">
+          <strong><i>i</i><sub>slew</sub></strong>
+          = Slewing-ring reduction ratio (:1)
+          <span class="badge bg-info">PF Std: 121 | PF-XXL: 110</span>
+        </div>
+        <div class="variable-row">
+          <strong><i>η</i><sub>slew</sub></strong>
+          = Slewing-ring efficiency (–)
+          <span class="badge bg-info">Both: 0.40</span>
+        </div>
+        <div class="variable-row">
+          <strong>CF</strong>
+          = Combined factor (–)
+          <span class="badge bg-info">PF Std: 48.4 | PF-XXL: 44.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Calculations -->
+    <div class="section-title"><i class="bi bi-speedometer2"></i> Speed Calculations</div>
+
+    <div class="formula-card">
+      <div class="formula-description">Total reduction ratio</div>
+      <div style="font-size: 1.2rem;">$$i_{\text{tot}} = i_{\text{gb}} \times i_{\text{slew}}$$</div>
+      <div class="variables">
+        <div class="variable-row"><strong><i>i</i><sub>gb</sub></strong> = Gearbox reduction ratio (:1) — motor input</div>
+        <div class="variable-row"><strong><i>i</i><sub>slew</sub></strong> = Slewing-ring reduction ratio (:1) — system constant</div>
+      </div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">GM output speed</div>
+      <div style="font-size: 1.2rem;">$$n_{\text{gm}} = \frac{n_{\text{mot}}}{i_{\text{gb}}}$$</div>
+      <div class="variables">
+        <div class="variable-row"><strong><i>n</i><sub>mot</sub></strong> = Motor rated speed (rpm) — from datasheet</div>
+      </div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">Crane slewing speed</div>
+      <div style="font-size: 1.2rem;">$$n_{\text{slew}} = \frac{n_{\text{gm}}}{i_{\text{slew}}} = \frac{n_{\text{mot}}}{i_{\text{tot}}}$$</div>
+      <div class="variables">
+        <div class="variable-row"><strong><i>n</i><sub>slew</sub></strong> = Critical for system design and operation</div>
+      </div>
+    </div>
+
+    <!-- Power Consistency -->
+    <div class="section-title"><i class="bi bi-lightning-charge"></i> Power Consistency Check</div>
+    <div class="formula-card">
+      <div class="formula-description">Power consistency deviation — Limit: <strong>ΔP ≤ 5%</strong></div>
+      <div style="font-size: 1.2rem;">$$\Delta P = \frac{\left| P - \frac{T_{\text{nom}} \times n_{\text{gm}}}{k} \right|}{P} \times 100\%$$</div>
+      <div class="variables">
+        <div class="variable-row"><strong><i>P</i></strong> = Motor rated power (kW) — from datasheet</div>
+        <div class="variable-row"><strong><i>T</i><sub>nom</sub></strong> = GM nominal torque (Nm) — from datasheet</div>
+        <div class="variable-row"><strong><i>k</i></strong> = Torque constant = 60000/(2π) = 9549.3</div>
+        <div class="variable-row"><em>Checks if declared power matches torque×speed product</em></div>
+      </div>
+    </div>
+
+    <!-- Ring Torques -->
+    <div class="section-title"><i class="bi bi-gear"></i> Ring Torques (GM Output → Ring)</div>
+    <p class="text-muted mb-3">All GM-output torques are multiplied by CF to get ring-level torques:</p>
+
+    <div class="formula-card">
+      <div class="formula-description">Ring running/nominal torque</div>
+      <div style="font-size: 1.2rem;">$$M_{S2} = T_{\text{nom}} \times CF$$</div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">Ring pull-up torque — Limit: <strong>M<sub>PU</sub> ≥ 0.9 × M<sub>rated</sub></strong></div>
+      <div style="font-size: 1.2rem;">$$M_{\text{PU}} = T_{\text{pu}} \times CF$$</div>
+      <div class="variables">
+        <div class="variable-row"><em>T<sub>pu</sub> may be missing in datasheet → REVIEW status</em></div>
+      </div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">Ring start/breakaway torque — Limit: <strong>M<sub>rated</sub> ≤ M<sub>start</sub> ≤ M<sub>max</sub></strong></div>
+      <div style="font-size: 1.2rem;">$$M_{\text{start}} = T_{\text{start}} \times CF$$</div>
+      <div class="variables">
+        <div class="variable-row"><em>Critical check: must be within structural band</em></div>
+      </div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">Ring peak torque — Limit: <strong>M<sub>peak</sub> ≤ M<sub>max</sub></strong></div>
+      <div style="font-size: 1.2rem;">$$M_{\text{peak}} = T_{\text{peak}} \times CF$$</div>
+    </div>
+
+    <!-- Derived Limits -->
+    <div class="section-title"><i class="bi bi-diagram-3"></i> Derived Limits (Reverse Calculations)</div>
+
+    <div class="formula-card">
+      <div class="formula-description">Required GM nominal torque</div>
+      <div style="font-size: 1.2rem;">$$T_{\text{gm,nom,req}} = \frac{M_{\text{rated}}}{CF}$$</div>
+      <div class="variables">
+        <div class="variable-row">
+          <strong>PF Standard:</strong> T<sub>gm,nom,req</sub> = 15360 / 48.4 = <strong>317.4 Nm</strong>
+        </div>
+        <div class="variable-row">
+          <strong>PF-XXL:</strong> T<sub>gm,nom,req</sub> = 65000 / 44.0 = <strong>1477.3 Nm</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-description">Maximum permissible GM starting torque</div>
+      <div style="font-size: 1.2rem;">$$T_{\text{gm,start,max}} = \frac{M_{\text{max}}}{CF}$$</div>
+      <div class="variables">
+        <div class="variable-row">
+          <strong>PF Standard:</strong> T<sub>gm,start,max</sub> = 41190 / 48.4 = <strong>851.0 Nm</strong>
+        </div>
+        <div class="variable-row">
+          <strong>PF-XXL:</strong> T<sub>gm,start,max</sub> = 70000 / 44.0 = <strong>1590.9 Nm</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Verify Tab -->
+  <div class="tab-pane fade" id="verify-tab">
+    <div class="card p-4">
+      <h5 class="mb-3"><i class="bi bi-calculator"></i> Formula Verifier</h5>
+      <p class="text-muted mb-3">Enter motor datasheet values to see them flow through all calculation formulas step-by-step.</p>
+      <iframe src="{% url 'formula_verifier' %}" style="width: 100%; height: 1000px; border: none; border-radius: 4px;"></iframe>
+    </div>
+  </div>
+
+  <!-- Acceptance Ranges Tab -->
+  <div class="tab-pane fade" id="acceptance-tab">
+    <div class="card p-4">
+      <h5 class="mb-3"><i class="bi bi-check2-square"></i> Acceptance Ranges</h5>
+      <p class="text-muted mb-3">Show acceptable input ranges and limits for each crane type.</p>
+      <iframe src="{% url 'acceptance_ranges' %}" style="width: 100%; height: 1400px; border: none; border-radius: 4px;"></iframe>
+    </div>
+  </div>
+
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
+  });
+</script>
 {% endblock %}

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formula Verifier</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <style>
+    body { padding: 1.5rem; }
+    .input-section { background: #f8f9fa; padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+    .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; color: #333; }
+    .form-group input { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+    .result-section { background: white; padding: 2rem; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .result-card { background: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 1.5rem; border-left: 4px solid #007bff; }
+    .result-label { font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+    .result-value { font-size: 1.4rem; font-weight: 700; color: #0056b3; font-family: 'Courier New', monospace; }
+    .result-unit { font-size: 0.9rem; color: #999; }
+    .weg-example { background: #e7f3ff; border-left-color: #0056b3; }
+    .zk33-example { background: #fff3cd; border-left-color: #ffc107; }
+    .zk43-example { background: #ffe7e7; border-left-color: #dc3545; }
+    .quick-fill { margin: 1rem 0; }
+    .quick-btn { font-size: 0.85rem; padding: 0.5rem 1rem; }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <h5 class="mb-3"><i class="bi bi-calculator"></i> Formula Verifier</h5>
+
+  <!-- Quick Fill Buttons -->
+  <div class="quick-fill">
+    <p class="mb-2"><strong>Quick fill with reference motors:</strong></p>
+    <form method="POST" style="display: inline;">
+      {% csrf_token %}
+      <input type="hidden" name="system_type" value="standard_pf">
+      <input type="hidden" name="i_gb" value="27.82">
+      <input type="hidden" name="n_mot" value="1410">
+      <input type="hidden" name="P" value="0.75">
+      <input type="hidden" name="T_nom" value="141">
+      <input type="hidden" name="T_pu" value="295">
+      <input type="hidden" name="T_start" value="353.3">
+      <input type="hidden" name="T_peak" value="367.2">
+      <input type="hidden" name="T_in_max" value="14.4">
+      <input type="hidden" name="T_bd" value="13.2">
+      <input type="hidden" name="duty" value="S2-12 min">
+      <input type="hidden" name="flange" value="□150 / Ø32 k6×50">
+      <button type="submit" class="btn btn-sm btn-primary quick-btn">
+        <i class="bi bi-check-circle"></i> WEG EP2557M (FITS)
+      </button>
+    </form>
+
+    <form method="POST" style="display: inline;">
+      {% csrf_token %}
+      <input type="hidden" name="system_type" value="standard_pf">
+      <input type="hidden" name="i_gb" value="30.91">
+      <input type="hidden" name="n_mot" value="1415">
+      <input type="hidden" name="P" value="1.5">
+      <input type="hidden" name="T_nom" value="315">
+      <input type="hidden" name="T_start" value="915">
+      <input type="hidden" name="T_peak" value="915">
+      <input type="hidden" name="duty" value="S3-15 min/h">
+      <input type="hidden" name="flange" value="□160 / Ø32×50">
+      <button type="submit" class="btn btn-sm btn-warning quick-btn">
+        <i class="bi bi-exclamation-circle"></i> ZK33CV (DOES NOT FIT)
+      </button>
+    </form>
+
+    <form method="POST" style="display: inline;">
+      {% csrf_token %}
+      <input type="hidden" name="system_type" value="pf_xxl">
+      <input type="hidden" name="i_gb" value="38.17">
+      <input type="hidden" name="n_mot" value="1415">
+      <input type="hidden" name="P" value="1.5">
+      <input type="hidden" name="T_nom" value="390">
+      <input type="hidden" name="T_start" value="1131">
+      <input type="hidden" name="T_peak" value="1326">
+      <input type="hidden" name="T_bd" value="34.7">
+      <input type="hidden" name="duty" value="S3-15 min/h">
+      <input type="hidden" name="flange" value="TBD">
+      <button type="submit" class="btn btn-sm btn-danger quick-btn">
+        <i class="bi bi-x-circle"></i> ZK43CV XXL (DOES NOT FIT)
+      </button>
+    </form>
+  </div>
+
+  <!-- Input Form -->
+  <form method="POST" class="input-section">
+    {% csrf_token %}
+
+    <h6 class="mb-3">Motor Datasheet Values</h6>
+
+    <div class="form-group mb-3">
+      <label>Ring System</label>
+      <select name="system_type" class="form-select" required>
+        <option value="standard_pf" {% if ring_system.system_type == 'standard_pf' %}selected{% endif %}>
+          PF Standard (ELW 597EM)
+        </option>
+        <option value="pf_xxl" {% if ring_system.system_type == 'pf_xxl' %}selected{% endif %}>
+          PF-XXL (TGB P26-04)
+        </option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <div class="form-group">
+        <label for="i_gb">Gearbox Ratio (i_gb)</label>
+        <input type="number" step="0.01" name="i_gb" id="i_gb" required placeholder="27.82">
+      </div>
+      <div class="form-group">
+        <label for="n_mot">Motor Speed (rpm)</label>
+        <input type="number" step="0.1" name="n_mot" id="n_mot" required placeholder="1410">
+      </div>
+      <div class="form-group">
+        <label for="P">Motor Power (kW)</label>
+        <input type="number" step="0.01" name="P" id="P" required placeholder="0.75">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="form-group">
+        <label for="T_nom">T_nom (Nm)</label>
+        <input type="number" step="0.1" name="T_nom" id="T_nom" required placeholder="141">
+      </div>
+      <div class="form-group">
+        <label for="T_pu">T_pu (Nm) <small class="text-muted">optional</small></label>
+        <input type="number" step="0.1" name="T_pu" id="T_pu" placeholder="295">
+      </div>
+      <div class="form-group">
+        <label for="T_start">T_start (Nm)</label>
+        <input type="number" step="0.1" name="T_start" id="T_start" required placeholder="353.3">
+      </div>
+      <div class="form-group">
+        <label for="T_peak">T_peak (Nm)</label>
+        <input type="number" step="0.1" name="T_peak" id="T_peak" required placeholder="367.2">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="form-group">
+        <label for="T_in_max">T_in_max (Nm) <small class="text-muted">optional</small></label>
+        <input type="number" step="0.1" name="T_in_max" id="T_in_max" placeholder="14.4">
+      </div>
+      <div class="form-group">
+        <label for="T_bd">T_bd (Nm) <small class="text-muted">optional</small></label>
+        <input type="number" step="0.1" name="T_bd" id="T_bd" placeholder="13.2">
+      </div>
+      <div class="form-group">
+        <label for="duty">Duty</label>
+        <input type="text" name="duty" id="duty" placeholder="S2-12 min">
+      </div>
+      <div class="form-group">
+        <label for="flange">Flange</label>
+        <input type="text" name="flange" id="flange" placeholder="□150 / Ø32 k6×50">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg mt-3">
+      <i class="bi bi-play-circle"></i> Verify Formulas
+    </button>
+  </form>
+
+  <!-- Results Section -->
+  {% if result %}
+    {% if result.error %}
+      <div class="alert alert-danger">
+        <strong>Error:</strong> {{ result.error }}
+      </div>
+    {% else %}
+      <div class="result-section">
+        <h6 class="mb-4"><i class="bi bi-check-circle"></i> Calculation Results ({{ result.system_type_display }})</h6>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="result-card">
+              <div class="result-label">Total Reduction</div>
+              <div class="result-value">{{ result.i_tot|floatformat:2 }}</div>
+              <div class="result-unit">i_tot = i_gb × i_slew</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">GM Output Speed</div>
+              <div class="result-value">{{ result.n_gm|floatformat:2 }}<span class="result-unit ms-2">rpm</span></div>
+              <div class="result-unit">n_gm = n_mot / i_gb</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">Crane Slewing Speed</div>
+              <div class="result-value">{{ result.n_slew|floatformat:3 }}<span class="result-unit ms-2">rpm</span></div>
+              <div class="result-unit">n_slew = n_mot / i_tot</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">Power Consistency</div>
+              <div class="result-value">{% if result.dP %}{{ result.dP|floatformat:2 }}%{% else %}—{% endif %}</div>
+              <div class="result-unit">Limit: ≤ 5%</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="result-card">
+              <div class="result-label">Ring Nominal Torque</div>
+              <div class="result-value">{{ result.M_S2|floatformat:0 }}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">M_S2 = T_nom × CF</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">Ring Pull-Up Torque</div>
+              <div class="result-value">{% if result.M_PU %}{{ result.M_PU|floatformat:0 }}{% else %}<em>N/A</em>{% endif %}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">Limit: ≥ {{ result.T_gm_nom_req|floatformat:0 }} Nm</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">Ring Start Torque</div>
+              <div class="result-value">{{ result.M_start|floatformat:0 }}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">Limit: M_rated ≤ M_start ≤ M_max</div>
+            </div>
+
+            <div class="result-card">
+              <div class="result-label">Ring Peak Torque</div>
+              <div class="result-value">{{ result.M_peak|floatformat:0 }}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">Limit: ≤ M_max</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Derived Limits -->
+        <hr class="my-4">
+        <h6 class="mb-3"><i class="bi bi-arrow-repeat"></i> Derived Limits (Reverse Calculations)</h6>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="result-card">
+              <div class="result-label">Required GM Nominal Torque</div>
+              <div class="result-value">{{ result.T_gm_nom_req|floatformat:1 }}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">T_gm_nom_req = M_rated / CF</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="result-card">
+              <div class="result-label">Max GM Starting Torque</div>
+              <div class="result-value">{{ result.T_gm_start_max|floatformat:1 }}<span class="result-unit ms-2">Nm</span></div>
+              <div class="result-unit">T_gm_start_max = M_max / CF</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

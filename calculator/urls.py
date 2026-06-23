@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('formulas/', views.formulas, name='formulas'),
+    path('formulas/verify/', views.formula_verifier, name='formula_verifier'),
+    path('formulas/acceptance/', views.acceptance_ranges, name='acceptance_ranges'),
     path('comparison/', views.comparison, name='comparison'),
     path('requirements/', views.requirements, name='requirements'),
     path('motors/<str:system_type>/', views.motor_list, name='motor_list'),
