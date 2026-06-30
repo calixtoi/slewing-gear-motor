@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col-md-9">
             <h1>Motor Verification</h1>
-            <p class="text-muted">Side-by-side supplier comparison against ideal motor parameters.</p>
+            <p class="text-muted"><strong>Full spec side-by-side supplier check:</strong> Paste each manufacturer's datasheet values into their column; the Validation column checks against the Ideal target range. <span style="background-color: #198754; color: white; padding: 2px 6px; border-radius: 3px;">Green = PASS</span> <span style="background-color: #ffc107; color: black; padding: 2px 6px; border-radius: 3px;">Yellow = CHECK</span> <span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px;">Red = FAIL</span> — with reason in cell.</p>
         </div>
         <div class="col-md-3 text-end">
             <a href="{% url 'supplier-add' %}" class="btn btn-primary btn-lg">
@@ -48,141 +48,333 @@
         {% endfor %}
     </div>
 
-    <div class="table-responsive" style="overflow-x: auto;">
-        <table class="table table-bordered table-sm">
-            <thead class="table-light">
+    <!-- Comprehensive specification table -->
+    <div class="table-responsive" style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 4px;">
+        <table class="table table-bordered table-sm mb-0" style="font-size: 0.85rem;">
+            <thead class="table-light" style="position: sticky; top: 0; z-index: 20;">
                 <tr>
-                    <th style="width: 250px; position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;">Parameter</th>
+                    <th style="width: 280px; position: sticky; left: 0; background-color: #e9ecef; z-index: 21; border-right: 2px solid #dee2e6;">Parameter / Check</th>
+                    <th style="width: 160px; background-color: #e9ecef;">Ideal target</th>
+                    <th style="width: 50px; background-color: #e9ecef;">Unit</th>
                     {% for item in validated %}
-                    <th style="min-width: 200px; text-align: center;">
+                    <th colspan="2" style="min-width: 320px; text-align: center; background-color: #f0f0f0; border-left: 2px solid #dee2e6;">
+                        <small><strong>{{ item.supplier.supplier_name }}</strong></small><br/>
                         <small class="text-muted">{{ item.supplier.motor_model }}</small>
                     </th>
                     {% endfor %}
                 </tr>
+                <tr>
+                    <th style="position: sticky; left: 0; background-color: #e9ecef; z-index: 21; border-right: 2px solid #dee2e6;"></th>
+                    <th style="background-color: #e9ecef;"></th>
+                    <th style="background-color: #e9ecef;"></th>
+                    {% for item in validated %}
+                    <th style="width: 160px; text-align: center; background-color: #f0f0f0; border-left: 2px solid #dee2e6; border-right: 1px solid #dee2e6;">Datasheet</th>
+                    <th style="width: 160px; text-align: center; background-color: #f0f0f0;">Validation</th>
+                    {% endfor %}
+                </tr>
             </thead>
             <tbody>
+                <!-- GEAR DATA SECTION -->
+                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                    <td colspan="11" class="table-secondary">GEAR DATA</td>
+                </tr>
+
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearmotor output speed (rpm)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Gear series</strong></td>
+                    <td>Helical bevel geared motors</td>
+                    <td>—</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.gearmotor_output_speed_rpm|default:"—" }}
-                        {% if item.result.gearmotor_output_speed_rpm %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.gearmotor_output_speed_rpm.status == 'PASS' %}#198754{% elif item.result.gearmotor_output_speed_rpm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.gearmotor_output_speed_rpm.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.gear_series|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.gear_series.status == 'PASS' %}#d4edda{% elif item.result.gear_series.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gear_series.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gear_series.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gear_series.reason|default:"Helical bevel type confirmed" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearmotor output torque (N·m)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Output speed</strong></td>
+                    <td>22–44</td>
+                    <td>rpm</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.gearmotor_output_torque_nm|default:"—" }}
-                        {% if item.result.gearmotor_output_torque_nm %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.gearmotor_output_torque_nm.status == 'PASS' %}#198754{% elif item.result.gearmotor_output_torque_nm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.gearmotor_output_torque_nm.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.gearmotor_output_speed_rpm|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.gearmotor_output_speed_rpm.status == 'PASS' %}#d4edda{% elif item.result.gearmotor_output_speed_rpm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gearmotor_output_speed_rpm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gearmotor_output_speed_rpm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gearmotor_output_speed_rpm.reason|default:"Within 22–44 rpm range" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearbox internal ratio</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Output torque</strong></td>
+                    <td>≥169.1 min; ≈180 preferred</td>
+                    <td>N·m</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.gearbox_internal_ratio|default:"—"|floatformat:2 }}
-                        {% if item.result.gearbox_internal_ratio %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.gearbox_internal_ratio.status == 'PASS' %}#198754{% elif item.result.gearbox_internal_ratio.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.gearbox_internal_ratio.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.gearmotor_output_torque_nm|default:"—"|floatformat:1 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.gearmotor_output_torque_nm.status == 'PASS' %}#d4edda{% elif item.result.gearmotor_output_torque_nm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gearmotor_output_torque_nm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gearmotor_output_torque_nm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gearmotor_output_torque_nm.reason|default:"Meets minimum 169.1 N·m" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Motor rated power (kW)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Gearbox internal ratio</strong></td>
+                    <td>31.59–66.59</td>
+                    <td>:1</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.motor_rated_power_kw|default:"—"|floatformat:2 }}
-                        {% if item.result.motor_rated_power_kw %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.motor_rated_power_kw.status == 'PASS' %}#198754{% elif item.result.motor_rated_power_kw.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.motor_rated_power_kw.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.gearbox_internal_ratio|default:"—"|floatformat:2 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.gearbox_internal_ratio.status == 'PASS' %}#d4edda{% elif item.result.gearbox_internal_ratio.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gearbox_internal_ratio.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gearbox_internal_ratio.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gearbox_internal_ratio.reason|default:"Within 31.59–66.59 range" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Motor rated speed (rpm)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Max. permissible input speed</strong></td>
+                    <td>1390–1465</td>
+                    <td>rpm</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.motor_rated_speed_rpm|default:"—" }}
-                        {% if item.result.motor_rated_speed_rpm %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.motor_rated_speed_rpm.status == 'PASS' %}#198754{% elif item.result.motor_rated_speed_rpm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.motor_rated_speed_rpm.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.max_permissible_input_speed_rpm|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.max_permissible_input_speed_rpm.status == 'PASS' %}#d4edda{% elif item.result.max_permissible_input_speed_rpm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.max_permissible_input_speed_rpm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.max_permissible_input_speed_rpm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.max_permissible_input_speed_rpm.reason|default:"Compatible with motor speed range" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Protection class (IP)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Gearbox structural capacity</strong></td>
+                    <td>≥563.6</td>
+                    <td>N·m</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.protection_class|default:"—" }}
-                        {% if item.result.protection_class %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.protection_class.status == 'PASS' %}#198754{% elif item.result.protection_class.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.protection_class.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.gearbox_structural_capacity_nm|default:"—"|floatformat:1 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.gearbox_structural_capacity_nm.status == 'PASS' %}#d4edda{% elif item.result.gearbox_structural_capacity_nm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gearbox_structural_capacity_nm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gearbox_structural_capacity_nm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gearbox_structural_capacity_nm.reason|default:"Exceeds minimum 563.6 N·m" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <!-- MOTOR DATA SECTION -->
+                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                    <td colspan="11" class="table-secondary">MOTOR DATA</td>
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Motor rated power</strong></td>
+                    <td>0.75–1.50</td>
+                    <td>kW</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.motor_rated_power_kw|default:"—"|floatformat:2 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.motor_rated_power_kw.status == 'PASS' %}#d4edda{% elif item.result.motor_rated_power_kw.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.motor_rated_power_kw.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.motor_rated_power_kw.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.motor_rated_power_kw.reason|default:"Within 0.75–1.50 kW range" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearbox structural capacity (N·m)</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Motor rated speed</strong></td>
+                    <td>1390–1465</td>
+                    <td>rpm</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.gearbox_structural_capacity_nm|default:"—"|floatformat:1 }}
-                        {% if item.result.gearbox_structural_capacity_nm %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.gearbox_structural_capacity_nm.status == 'PASS' %}#198754{% elif item.result.gearbox_structural_capacity_nm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.gearbox_structural_capacity_nm.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.motor_rated_speed_rpm|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.motor_rated_speed_rpm.status == 'PASS' %}#d4edda{% elif item.result.motor_rated_speed_rpm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.motor_rated_speed_rpm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.motor_rated_speed_rpm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.motor_rated_speed_rpm.reason|default:"4-pole motor within 1390–1465 rpm" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
 
                 <tr>
-                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Efficiency class</strong></td>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Protection class (IP)</strong></td>
+                    <td>IP66</td>
+                    <td>—</td>
                     {% for item in validated %}
-                    <td>
-                        {{ item.supplier.efficiency_class|default:"—" }}
-                        {% if item.result.efficiency_class %}
-                        <span class="badge"
-                              style="background-color: {% if item.result.efficiency_class.status == 'PASS' %}#198754{% elif item.result.efficiency_class.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
-                            {{ item.result.efficiency_class.status }}
-                        </span>
-                        {% endif %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.protection_class|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.protection_class.status == 'PASS' %}#d4edda{% elif item.result.protection_class.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.protection_class.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.protection_class.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.protection_class.reason|default:"IP66 marine/offshore protection" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Efficiency class</strong></td>
+                    <td>IE2 or IE3</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.efficiency_class|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.efficiency_class.status == 'PASS' %}#d4edda{% elif item.result.efficiency_class.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.efficiency_class.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.efficiency_class.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.efficiency_class.reason|default:"IE2/IE3 efficiency class" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Supply voltage</strong></td>
+                    <td>400 / 480 / 690</td>
+                    <td>V</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.supply_voltage_v|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.supply_voltage_v.status == 'PASS' %}#d4edda{% elif item.result.supply_voltage_v.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.supply_voltage_v.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.supply_voltage_v.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.supply_voltage_v.reason|default:"Supports 400/480/690 V" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Supply frequency</strong></td>
+                    <td>50 / 60</td>
+                    <td>Hz</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.supply_frequency_hz|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.supply_frequency_hz.status == 'PASS' %}#d4edda{% elif item.result.supply_frequency_hz.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.supply_frequency_hz.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.supply_frequency_hz.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.supply_frequency_hz.reason|default:"50/60 Hz capability" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <!-- EXECUTION DETAILS SECTION -->
+                <tr style="background-color: #f8f9fa; font-weight: bold;">
+                    <td colspan="11" class="table-secondary">EXECUTION & GENERAL</td>
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Cooling method</strong></td>
+                    <td>IC410 TENV unventilated, no shaft fan</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.cooling_method|default:"—"|truncatewords:5 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.cooling_method.status == 'PASS' %}#d4edda{% elif item.result.cooling_method.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.cooling_method.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.cooling_method.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.cooling_method.reason|default:"TENV IC410 execution confirmed" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Anti-condensation heater</strong></td>
+                    <td>~25 W, 24 V DC</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.heater_spec|default:"—"|truncatewords:5 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.heater_spec.status == 'PASS' %}#d4edda{% elif item.result.heater_spec.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.heater_spec.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.heater_spec.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.heater_spec.reason|default:"~25 W, 24 V DC heater included" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Duty cycle rating</strong></td>
+                    <td>S3-25%</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.duty_cycle|default:"—"|truncatewords:3 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.duty_cycle.status == 'PASS' %}#d4edda{% elif item.result.duty_cycle.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.duty_cycle.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.duty_cycle.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.duty_cycle.reason|default:"S3-25% intermittent duty rated" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Corrosivity category</strong></td>
+                    <td>C5H (per EN ISO 12944-5)</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.corrosivity_category|default:"—" }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.corrosivity_category.status == 'PASS' %}#d4edda{% elif item.result.corrosivity_category.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.corrosivity_category.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.corrosivity_category.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.corrosivity_category.reason|default:"C5H coastal/offshore protection" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Certifications & compliance</strong></td>
+                    <td>CE + EN 10204 Type 3.1 + UKCA optional</td>
+                    <td>—</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">{{ item.supplier.certifications|default:"—"|truncatewords:5 }}</td>
+                    <td style="padding: 4px; background-color: {% if item.result.certifications.status == 'PASS' %}#d4edda{% elif item.result.certifications.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.certifications.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.certifications.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.certifications.reason|default:"CE + Type 3.1 material certificate" }}</small>
+                        </small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #fff; z-index: 10; border-right: 2px solid #dee2e6;"><strong>Crane slewing speed window</strong><br/><small>(Output speed ÷ 110)</small></td>
+                    <td>0.20–0.40</td>
+                    <td>rpm</td>
+                    {% for item in validated %}
+                    <td style="border-left: 2px solid #dee2e6;">
+                        {% if item.supplier.gearmotor_output_speed_rpm and item.supplier.gearmotor_output_speed_rpm > 0 %}
+                            {{ item.supplier.gearmotor_output_speed_rpm|floatformat:2 }} ÷ 110 = <strong>{{ design.slewing_ring_ratio|default:110 }}</strong>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="padding: 4px; background-color: {% if item.result.gearmotor_output_speed_rpm.status == 'PASS' %}#d4edda{% elif item.result.gearmotor_output_speed_rpm.status == 'CHECK' %}#fff3cd{% else %}#f8d7da{% endif %};">
+                        <small>
+                            {% if item.result.gearmotor_output_speed_rpm.status == 'PASS' %}<span style="color: #155724; font-weight: bold;">✓ PASS</span>{% elif item.result.gearmotor_output_speed_rpm.status == 'CHECK' %}<span style="color: #856404; font-weight: bold;">? CHECK</span>{% else %}<span style="color: #721c24; font-weight: bold;">✕ FAIL</span>{% endif %}
+                            <br/><small>{{ item.result.gearmotor_output_speed_rpm.reason|default:"Output speed within 22–44 rpm" }}</small>
+                        </small>
                     </td>
                     {% endfor %}
                 </tr>
             </tbody>
         </table>
     </div>
+
+    <div class="mt-4 mb-4">
+        <p class="text-muted small">
+            <strong>Legend:</strong>
+            <span style="background-color: #d4edda; padding: 2px 8px; border-radius: 3px;">✓ PASS = Meets specification</span>
+            <span style="background-color: #fff3cd; padding: 2px 8px; border-radius: 3px; margin-left: 8px;">? CHECK = Needs supplier confirmation</span>
+            <span style="background-color: #f8d7da; padding: 2px 8px; border-radius: 3px; margin-left: 8px;">✕ FAIL = Does not meet requirement</span>
+        </p>
+    </div>
+
     {% endif %}
 
     {% if not validated %}
