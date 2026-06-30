@@ -20,18 +20,35 @@ class MotorVerificationListView(ListView):
         context = super().get_context_data(**kwargs)
         design = DesignParameters.get_or_create_default()
 
-        # Validate each supplier and compute summaries
-        suppliers_with_validation = []
+        # Validate each supplier and build validation + status info
+        validated = []
         for supplier in context['suppliers']:
-            validation = validate_supplier(supplier, design)
-            summary = get_supplier_summary(supplier, design)
-            suppliers_with_validation.append({
-                'supplier': supplier,
-                'validation': validation,
-                'summary': summary,
+            result = validate_supplier(supplier, design)
+            fails = sum(1 for v in result.values() if v["status"] == "FAIL")
+            checks = sum(1 for v in result.values() if v["status"] == "CHECK")
+            passes = sum(1 for v in result.values() if v["status"] == "PASS")
+
+            if fails > 0:
+                overall = "NOT FIT"
+                overall_class = "danger"
+            elif checks >= 5:
+                overall = "REVIEW REQUIRED"
+                overall_class = "warning"
+            else:
+                overall = "SUITABLE"
+                overall_class = "success"
+
+            validated.append({
+                "supplier": supplier,
+                "result": result,
+                "fails": fails,
+                "checks": checks,
+                "passes": passes,
+                "overall": overall,
+                "overall_class": overall_class,
             })
 
-        context['suppliers_with_validation'] = suppliers_with_validation
+        context['validated'] = validated
         context['design'] = design
 
         return context
