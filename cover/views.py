@@ -45,11 +45,15 @@ class CoverView(UpdateView):
             * 100
         )
 
+        slewing_ring_efficiency_percent = design.slewing_ring_efficiency * 100
+
         context['required_gearmotor_output_torque_nm'] = required_gearmotor_output_torque_nm
         context['gearmotor_output_speed_min_rpm'] = gearmotor_output_speed_min_rpm
         context['gearmotor_output_speed_max_rpm'] = gearmotor_output_speed_max_rpm
         context['pf200_torque_share_percent'] = pf200_torque_share_percent
+        context['slewing_ring_efficiency_percent'] = slewing_ring_efficiency_percent
         context['design_principles'] = [
+            "The slewing ring mechanism has a fixed 110:1 gear ratio and 40% mechanical efficiency, accounting for friction losses in the slewing ring drive.",
             "The motor is not intended to carry the full peak structural load, but rather a minimum design fraction thereof.",
             "This design philosophy is derived from proven PF200 operation, where the motor shared only 35% of the worst-case peak torque.",
             "For PM401, a conservative minimum of 30% motor torque share is adopted to ensure robust behaviour across all operating scenarios.",

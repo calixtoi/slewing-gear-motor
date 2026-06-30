@@ -18,7 +18,11 @@ class DesignParameters(models.Model):
     )
     slewing_ring_ratio_pm401 = models.FloatField(
         default=110.0,
-        help_text="Number of gearmotor revolutions per one full crane revolution. Source: TGB P26-04."
+        help_text="Slewing ring gear ratio: 110:1. Number of gearmotor revolutions per one full crane revolution. Source: TGB P26-04."
+    )
+    slewing_ring_efficiency = models.FloatField(
+        default=0.40,
+        help_text="Slewing ring mechanical efficiency: 40%. Accounts for friction losses in the slewing ring drive mechanism."
     )
     slewing_ring_ratio_pf200_ref = models.FloatField(
         default=121.0,
@@ -54,6 +58,7 @@ class DesignParameters(models.Model):
                 'crane_peak_torque_tp_kNm': 43.0,
                 'crane_peak_torque_substation_kNm': 62.0,
                 'slewing_ring_ratio_pm401': 110.0,
+                'slewing_ring_efficiency': 0.40,
                 'slewing_ring_ratio_pf200_ref': 121.0,
                 'motor_torque_share_fraction': 0.30,
                 'crane_max_slewing_speed_rpm': 0.40,

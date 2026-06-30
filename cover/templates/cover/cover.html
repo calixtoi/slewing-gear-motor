@@ -31,6 +31,14 @@
         <div class="card-body">
             <table class="table table-sm table-bordered">
                 <tbody>
+                    <tr class="table-info">
+                        <td><strong>Slewing ring gear ratio (PM401)</strong></td>
+                        <td><strong>{{ object.slewing_ring_ratio_pm401|floatformat:0 }}:1</strong></td>
+                    </tr>
+                    <tr class="table-info">
+                        <td><strong>Slewing ring mechanical efficiency</strong></td>
+                        <td><strong>{{ slewing_ring_efficiency_percent|floatformat:0 }}%</strong></td>
+                    </tr>
                     <tr>
                         <td><strong>Required gearbox motor torque</strong></td>
                         <td><strong>{{ required_gearmotor_output_torque_nm|floatformat:1 }} N·m</strong> (minimum)</td>
@@ -98,10 +106,18 @@
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.slewing_ring_efficiency.label }}</strong></label>
+                        {{ form.slewing_ring_efficiency }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.slewing_ring_efficiency.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
                         <label class="form-label"><strong>{{ form.slewing_ring_ratio_pf200_ref.label }}</strong></label>
                         {{ form.slewing_ring_ratio_pf200_ref }}
                         <small class="form-text text-muted d-block mt-1">{{ form.slewing_ring_ratio_pf200_ref.help_text }}</small>
                     </div>
+                </div>
+
+                <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label"><strong>{{ form.motor_torque_share_fraction.label }}</strong></label>
                         {{ form.motor_torque_share_fraction }}
