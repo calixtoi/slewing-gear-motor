@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if mode == 'add' %}Add{% else %}Edit{% endif %} Motor Supplier | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>{% if mode == 'add' %}Add New Motor Supplier{% else %}Edit Motor Supplier{% endif %}</h1>
+            <p class="text-muted">Enter supplier data manually, extract from text, or upload a PDF datasheet.</p>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="manual-tab" data-bs-toggle="tab" href="#manual" role="tab">Manual Entry</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="text-tab" data-bs-toggle="tab" href="#text" role="tab">Paste Text</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="pdf-tab" data-bs-toggle="tab" href="#pdf" role="tab">Upload PDF</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Manual Entry Tab -->
+        <div class="tab-pane fade show active" id="manual" role="tabpanel">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.supplier_name.label }}</strong></label>
+                        {{ form.supplier_name }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.supplier_name.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.motor_model.label }}</strong></label>
+                        {{ form.motor_model }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.motor_model.help_text }}</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>{{ form.datasheet_source.label }}</strong></label>
+                    {{ form.datasheet_source }}
+                    <small class="form-text text-muted d-block mt-1">{{ form.datasheet_source.help_text }}</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>{{ form.notes.label }}</strong></label>
+                    {{ form.notes }}
+                    <small class="form-text text-muted d-block mt-1">{{ form.notes.help_text }}</small>
+                </div>
+
+                <hr/>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h5>Gear Data</h5>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.gear_series.label }}</label>
+                            {{ form.gear_series }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.gearmotor_output_speed_rpm.label }}</label>
+                            {{ form.gearmotor_output_speed_rpm }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.gearmotor_output_torque_nm.label }}</label>
+                            {{ form.gearmotor_output_torque_nm }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.gearbox_internal_ratio.label }}</label>
+                            {{ form.gearbox_internal_ratio }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <h5>Motor Data</h5>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.motor_rated_power_kw.label }}</label>
+                            {{ form.motor_rated_power_kw }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.motor_rated_speed_rpm.label }}</label>
+                            {{ form.motor_rated_speed_rpm }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.efficiency_class.label }}</label>
+                            {{ form.efficiency_class }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">{{ form.protection_class.label }}</label>
+                            {{ form.protection_class }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> {% if mode == 'add' %}Add{% else %}Save{% endif %} Supplier
+                    </button>
+                    <a href="{% url 'verification-list' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Text Paste Tab -->
+        <div class="tab-pane fade" id="text" role="tabpanel">
+            <form method="post" action="{% url 'extract-text' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">{{ text_form.raw_text.label }}</label>
+                    {{ text_form.raw_text }}
+                </div>
+                <div class="mb-3">
+                    {{ text_form.use_ai }}
+                    <label class="form-check-label" for="{{ text_form.use_ai.id_for_label }}">{{ text_form.use_ai.label }}</label>
+                    <small class="form-text text-muted d-block">{{ text_form.use_ai.help_text }}</small>
+                </div>
+                <button type="submit" class="btn btn-secondary" id="extract-text-btn">
+                    <i class="bi bi-arrow-right"></i> Extract and Pre-fill
+                </button>
+            </form>
+        </div>
+
+        <!-- PDF Upload Tab -->
+        <div class="tab-pane fade" id="pdf" role="tabpanel">
+            <form method="post" enctype="multipart/form-data" action="{% url 'extract-pdf' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ pdf_form.pdf_file }}
+                    <small class="form-text text-muted d-block mt-1">{{ pdf_form.pdf_file.help_text }}</small>
+                </div>
+                <button type="submit" class="btn btn-secondary" id="extract-pdf-btn">
+                    <i class="bi bi-file-pdf"></i> Extract from PDF
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('extract-text-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    // Implement AJAX extraction and pre-fill form
+    alert('Text extraction feature - fill form manually or use PDF');
+});
+
+document.getElementById('extract-pdf-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    // Implement AJAX PDF extraction
+    alert('PDF extraction feature - fill form manually');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Motor Cycle Calculation | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Motor Cycle Calculation</h1>
+            <p class="text-muted">Full motor sizing calculation: torque → speed → power → thermal duty.</p>
+        </div>
+    </div>
+
+    {% for result in results %}
+        {% if forloop.first or results|dictsort:"group"|first != result.group %}
+            {% if not forloop.first %}
+                </div>
+            {% endif %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Step {{ result.step }} — {{ result.group }}</h5>
+                </div>
+                <div class="card-body">
+        {% endif %}
+
+        <div class="row mb-4 pb-3 border-bottom">
+            <div class="col-md-6">
+                <h6 class="font-weight-bold">{{ result.parameter }}</h6>
+                <p class="text-muted mb-2"><small>{{ result.formula }}</small></p>
+                <div class="alert alert-light">
+                    <code>{{ result.expanded_formula }}</code>
+                </div>
+                {% if result.min_spec %}
+                    <p class="mb-0"><small><strong>Minimum requirement:</strong> ≥ {{ result.min_spec }} {{ result.unit }}</small></p>
+                {% endif %}
+                {% if result.max_spec %}
+                    <p class="mb-0"><small><strong>Maximum requirement:</strong> ≤ {{ result.max_spec }} {{ result.unit }}</small></p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <div class="bg-light p-4 rounded text-center">
+                    {% if result.status == 'PASS' %}
+                        <span class="badge bg-success mb-2">PASS</span>
+                    {% elif result.status == 'FAIL' %}
+                        <span class="badge bg-danger mb-2">FAIL</span>
+                    {% elif result.status == 'CHECK' %}
+                        <span class="badge bg-warning mb-2">CHECK</span>
+                    {% else %}
+                        <span class="badge bg-secondary mb-2">INFORMATION</span>
+                    {% endif %}
+                    <h4 class="mb-1">
+                        {% if result.value|floatformat:0 != result.value|floatformat %}
+                            {{ result.value|floatformat:1 }}
+                        {% else %}
+                            {{ result.value|floatformat:0 }}
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted mb-0">{{ result.unit }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if forloop.last %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <!-- Action buttons -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <a href="{% url 'parameters' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-right"></i> View Ideal Motor Parameters
+            </a>
+            <a href="{% url 'verification-list' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-check-circle"></i> Check Suppliers
+            </a>
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-lg ms-2">
+                    <i class="bi bi-arrow-clockwise"></i> Recalculate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

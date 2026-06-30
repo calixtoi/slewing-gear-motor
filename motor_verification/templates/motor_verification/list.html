@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Motor Verification | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <h1>Motor Verification</h1>
+            <p class="text-muted">Side-by-side supplier comparison against ideal motor parameters.</p>
+        </div>
+        <div class="col-md-3 text-end">
+            <a href="{% url 'supplier-add' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle"></i> Add Supplier
+            </a>
+        </div>
+    </div>
+
+    {% if suppliers_with_validation %}
+    <div class="table-responsive" style="overflow-x: auto;">
+        <table class="table table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 250px; position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;">Parameter</th>
+                    {% for item in suppliers_with_validation %}
+                    <th style="min-width: 300px;">
+                        <div class="mb-2">
+                            <strong>{{ item.supplier.supplier_name }}</strong><br/>
+                            <small class="text-muted">{{ item.supplier.motor_model }}</small>
+                        </div>
+                        <div class="mb-2">
+                            <span class="badge"
+                                  style="background-color: {% if item.summary.overall == 'SUITABLE' %}#198754{% elif item.summary.overall == 'REVIEW' %}#ffc107{% else %}#dc3545{% endif %};">
+                                {{ item.summary.overall }}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <small>
+                                <span class="badge bg-success">✓ {{ item.summary.pass_count }}</span>
+                                <span class="badge bg-warning">? {{ item.summary.check_count }}</span>
+                                <span class="badge bg-danger">✕ {{ item.summary.fail_count }}</span>
+                            </small>
+                        </div>
+                        <div>
+                            <a href="{% url 'supplier-edit' item.supplier.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'supplier-delete' item.supplier.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </div>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearmotor output speed (rpm)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.gearmotor_output_speed_rpm|default:"—" }}
+                        {% if item.validation.gearmotor_output_speed_rpm %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.gearmotor_output_speed_rpm.status == 'PASS' %}#198754{% elif item.validation.gearmotor_output_speed_rpm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.gearmotor_output_speed_rpm.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearmotor output torque (N·m)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.gearmotor_output_torque_nm|default:"—" }}
+                        {% if item.validation.gearmotor_output_torque_nm %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.gearmotor_output_torque_nm.status == 'PASS' %}#198754{% elif item.validation.gearmotor_output_torque_nm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.gearmotor_output_torque_nm.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearbox internal ratio</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.gearbox_internal_ratio|default:"—"|floatformat:2 }}
+                        {% if item.validation.gearbox_internal_ratio %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.gearbox_internal_ratio.status == 'PASS' %}#198754{% elif item.validation.gearbox_internal_ratio.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.gearbox_internal_ratio.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Motor rated power (kW)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.motor_rated_power_kw|default:"—"|floatformat:2 }}
+                        {% if item.validation.motor_rated_power_kw %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.motor_rated_power_kw.status == 'PASS' %}#198754{% elif item.validation.motor_rated_power_kw.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.motor_rated_power_kw.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Motor rated speed (rpm)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.motor_rated_speed_rpm|default:"—" }}
+                        {% if item.validation.motor_rated_speed_rpm %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.motor_rated_speed_rpm.status == 'PASS' %}#198754{% elif item.validation.motor_rated_speed_rpm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.motor_rated_speed_rpm.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Protection class (IP)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.protection_class|default:"—" }}
+                        {% if item.validation.protection_class %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.protection_class.status == 'PASS' %}#198754{% elif item.validation.protection_class.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.protection_class.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Gearbox structural capacity (N·m)</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.gearbox_structural_capacity_nm|default:"—"|floatformat:1 }}
+                        {% if item.validation.gearbox_structural_capacity_nm %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.gearbox_structural_capacity_nm.status == 'PASS' %}#198754{% elif item.validation.gearbox_structural_capacity_nm.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.gearbox_structural_capacity_nm.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 10;"><strong>Efficiency class</strong></td>
+                    {% for item in suppliers_with_validation %}
+                    <td>
+                        {{ item.supplier.efficiency_class|default:"—" }}
+                        {% if item.validation.efficiency_class %}
+                        <span class="badge"
+                              style="background-color: {% if item.validation.efficiency_class.status == 'PASS' %}#198754{% elif item.validation.efficiency_class.status == 'CHECK' %}#ffc107{% else %}#dc3545{% endif %};">
+                            {{ item.validation.efficiency_class.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        <h4 class="alert-heading">No suppliers added yet</h4>
+        <p>Get started by adding your first motor supplier using the button above.</p>
+        <a href="{% url 'supplier-add' %}" class="btn btn-primary">Add First Supplier</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

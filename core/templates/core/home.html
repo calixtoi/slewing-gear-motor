@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Home | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-5">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4">Slewing Drive Motor Dimensioning Tool</h1>
+            <p class="lead">PF / PM010 / PM401 Crane Variant — Motor Sizing & Supplier Verification</p>
+        </div>
+    </div>
+
+    {% if fail_suppliers %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Status Warning</h4>
+        <p>{{ fail_suppliers|length }} supplier(s) have FAIL results in motor verification:</p>
+        <ul class="mb-0">
+            {% for supplier in fail_suppliers %}
+            <li><a href="{% url 'verification-list' %}">{{ supplier.supplier_name }} - {{ supplier.motor_model }}</a></li>
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        {% for app in apps %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-{{ app.icon }} me-2"></i>{{ app.name }}
+                    </h5>
+                    <p class="card-text text-muted">{{ app.description }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{% url app.slug %}" class="btn btn-primary w-100">
+                        Open
+                        <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="mb-0">About This Tool</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Slewing Motor Selector</strong> is a comprehensive Django web application for digitising the engineering workbook used to size and verify slewing drive motors for industrial cranes.</p>
+                    <p>The tool implements six interconnected modules:</p>
+                    <ol>
+                        <li><strong>Cover</strong> — Design basis and editable source parameters</li>
+                        <li><strong>Motor Cycle Calculation</strong> — Full sizing calculation from torque to power</li>
+                        <li><strong>Ideal Motor Parameters</strong> — Complete specification requirements</li>
+                        <li><strong>Motor Verification</strong> — Supplier datasheet comparison</li>
+                        <li><strong>Formula Library</strong> — All formulas explained in plain English</li>
+                        <li><strong>Settings</strong> — Design parameter configuration (accessible via Cover page)</li>
+                    </ol>
+                    <p>All calculations are performed dynamically from editable design parameters stored in a shared SQLite database. Changes to source parameters instantly propagate across all calculations and verification results.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+}
+</style>
+{% endblock %}

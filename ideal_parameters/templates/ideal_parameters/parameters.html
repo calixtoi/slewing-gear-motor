@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Ideal Motor Parameters | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Ideal Motor Parameters</h1>
+            <p class="text-muted">Complete motor specification requirement table, grouped by category. Blue-highlighted values are computed from current design parameters.</p>
+        </div>
+    </div>
+
+    <div class="accordion" id="parametersAccordion">
+        {% for group, params in grouped_parameters.items %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+                    <strong>{{ group }}</strong> <span class="ms-2 text-muted">({{ params|length }} parameters)</span>
+                </button>
+            </h2>
+            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#parametersAccordion">
+                <div class="accordion-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th style="width: 25%;">Parameter</th>
+                                <th style="width: 30%;">Ideal Range</th>
+                                <th style="width: 10%;">Unit</th>
+                                <th style="width: 20%;">Specification Requirement</th>
+                                <th style="width: 8%;">Min</th>
+                                <th style="width: 8%;">Max</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for param in params %}
+                            <tr>
+                                <td><strong>{{ param.parameter }}</strong></td>
+                                <td>{{ param.ideal_range }}</td>
+                                <td><small>{{ param.unit }}</small></td>
+                                <td><small class="text-muted">{{ param.specification_requirement }}</small></td>
+                                <td>
+                                    {% if param.calc_min is not None %}
+                                        <span class="badge bg-info">
+                                            {% if param.calc_min|floatformat:0 != param.calc_min|floatformat %}
+                                                {{ param.calc_min|floatformat:2 }}
+                                            {% else %}
+                                                {{ param.calc_min|floatformat:0 }}
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if param.calc_max is not None %}
+                                        <span class="badge bg-info">
+                                            {% if param.calc_max|floatformat:0 != param.calc_max|floatformat %}
+                                                {{ param.calc_max|floatformat:2 }}
+                                            {% else %}
+                                                {{ param.calc_max|floatformat:0 }}
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Action buttons -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <a href="{% url 'calc' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left"></i> Back to Calculation
+            </a>
+            <a href="{% url 'cover' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-sliders"></i> Edit Design Parameters
+            </a>
+            <a href="{% url 'verification-list' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-check-circle"></i> Check Suppliers
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

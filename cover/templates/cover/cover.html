@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Cover | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Design Parameters & Cover Sheet</h1>
+            <p class="text-muted">Configure the source parameters that drive all calculations across the tool.</p>
+        </div>
+    </div>
+
+    <!-- Section 1: Executive Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Executive Summary</h5>
+        </div>
+        <div class="card-body">
+            <p>This document defines the slewing drive motor dimensioning for two PF crane variants: PM010 and PM401. Following the existing PF200 design philosophy, the motor is sized to cover a minimum 30% share of the worst-case structural peak torque — not the full peak. Two operating scenarios are evaluated: Transport Position operation (maximum 43 kNm) and Substation operation (maximum 62 kNm). The Substation scenario was selected as the worst-case dimensioning basis due to its higher structural torque.</p>
+            <p><strong>Result:</strong> minimum gearbox motor torque ≥ {{ required_gearmotor_output_torque_nm|floatformat:1 }} Newton-metres at {{ gearmotor_output_speed_min_rpm|floatformat:0 }}–{{ gearmotor_output_speed_max_rpm|floatformat:0 }} revolutions per minute — equivalent to approximately {{ pf200_torque_share_percent|floatformat:1 }}% of the PF200 maximum slewing torque.</p>
+        </div>
+    </div>
+
+    <!-- Section 2: Key Results -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Key Results (Computed Live)</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-sm table-bordered">
+                <tbody>
+                    <tr>
+                        <td><strong>Required gearbox motor torque</strong></td>
+                        <td><strong>{{ required_gearmotor_output_torque_nm|floatformat:1 }} N·m</strong> (minimum)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ideal gearbox output speed range</strong></td>
+                        <td><strong>{{ gearmotor_output_speed_min_rpm|floatformat:1 }} – {{ gearmotor_output_speed_max_rpm|floatformat:1 }} rpm</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>PF200 equivalent torque share</strong></td>
+                        <td><strong>{{ pf200_torque_share_percent|floatformat:1 }}%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 3: Design Principles -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Design Principles</h5>
+        </div>
+        <div class="card-body">
+            <ol>
+                {% for principle in design_principles %}
+                <li>{{ principle }}</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+
+    <!-- Section 4: Editable Source Parameters -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Editable Source Parameters</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.crane_peak_torque_pf200_kNm.label }}</strong></label>
+                        {{ form.crane_peak_torque_pf200_kNm }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.crane_peak_torque_pf200_kNm.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.crane_peak_torque_tp_kNm.label }}</strong></label>
+                        {{ form.crane_peak_torque_tp_kNm }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.crane_peak_torque_tp_kNm.help_text }}</small>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.crane_peak_torque_substation_kNm.label }}</strong></label>
+                        {{ form.crane_peak_torque_substation_kNm }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.crane_peak_torque_substation_kNm.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.slewing_ring_ratio_pm401.label }}</strong></label>
+                        {{ form.slewing_ring_ratio_pm401 }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.slewing_ring_ratio_pm401.help_text }}</small>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.slewing_ring_ratio_pf200_ref.label }}</strong></label>
+                        {{ form.slewing_ring_ratio_pf200_ref }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.slewing_ring_ratio_pf200_ref.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.motor_torque_share_fraction.label }}</strong></label>
+                        {{ form.motor_torque_share_fraction }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.motor_torque_share_fraction.help_text }}</small>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.crane_max_slewing_speed_rpm.label }}</strong></label>
+                        {{ form.crane_max_slewing_speed_rpm }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.crane_max_slewing_speed_rpm.help_text }}</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label"><strong>{{ form.crane_min_slewing_speed_rpm.label }}</strong></label>
+                        {{ form.crane_min_slewing_speed_rpm }}
+                        <small class="form-text text-muted d-block mt-1">{{ form.crane_min_slewing_speed_rpm.help_text }}</small>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> Save and Recalculate
+                    </button>
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

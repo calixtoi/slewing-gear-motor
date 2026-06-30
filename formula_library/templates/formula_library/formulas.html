@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Formula Library | Slewing Motor Selector{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Formula Library</h1>
+            <p class="text-muted">Complete reference of all formulas used in the motor sizing tool, with full explanations and no abbreviations.</p>
+        </div>
+        <div class="col-md-4">
+            <input type="text" id="formulaSearch" class="form-control" placeholder="Search formulas..." />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            {% for formula in formulas %}
+            <div class="card mb-4 formula-card" data-formula-id="{{ formula.id }}" data-formula-name="{{ formula.name }}">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <h5 class="mb-0">{{ formula.id }}</h5>
+                        </div>
+                        <div class="col-md-10">
+                            <h5 class="mb-0">{{ formula.name }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="text-muted"><small>Symbolic Formula</small></label>
+                            <pre class="bg-light p-3 rounded"><code>{{ formula.formula_symbolic }}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="text-muted"><small>Expanded Formula (Plain English)</small></label>
+                            <p class="lead">{{ formula.formula_expanded }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#vars{{ formula.id }}" aria-expanded="false">
+                                <i class="bi bi-chevron-down"></i> Variable Definitions
+                            </button>
+                            <div class="collapse mt-2" id="vars{{ formula.id }}">
+                                <div class="card card-body">
+                                    <dl>
+                                        {% for var in formula.variables %}
+                                        <dt class="font-weight-bold">{{ var.symbol }}</dt>
+                                        <dd class="text-muted mb-2">{{ var.description }}</dd>
+                                        {% endfor %}
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="text-muted"><small>Example Calculation</small></label>
+                            <pre class="bg-light p-3 rounded"><code>{{ formula.example }}</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted"><small>Source & Usage</small></label>
+                            <p class="mb-1"><small><strong>Source:</strong> {{ formula.source }}</small></p>
+                            <p><span class="badge bg-secondary">{{ formula.used_in }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <a href="{% url 'calc' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left"></i> Back to Motor Cycle Calculation
+            </a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="bi bi-house"></i> Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formulaSearch').addEventListener('keyup', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    document.querySelectorAll('.formula-card').forEach(function(card) {
+        const name = card.getAttribute('data-formula-name').toLowerCase();
+        if (name.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
