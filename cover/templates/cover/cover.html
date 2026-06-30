@@ -18,8 +18,13 @@
             <h5 class="mb-0">Executive Summary</h5>
         </div>
         <div class="card-body">
-            <p>This document defines the slewing drive motor dimensioning for two PF crane variants: PM010 and PM401. Following the existing PF200 design philosophy, the motor is sized to cover a minimum 30% share of the worst-case structural peak torque — not the full peak. Two operating scenarios are evaluated: Transport Position operation (maximum 43 kNm) and Substation operation (maximum 62 kNm). The Substation scenario was selected as the worst-case dimensioning basis due to its higher structural torque.</p>
-            <p><strong>Result:</strong> minimum gearbox motor torque ≥ {{ required_gearmotor_output_torque_nm|floatformat:1 }} Newton-metres at {{ gearmotor_output_speed_min_rpm|floatformat:0 }}–{{ gearmotor_output_speed_max_rpm|floatformat:0 }} revolutions per minute — equivalent to approximately {{ pf200_torque_share_percent|floatformat:1 }}% of the PF200 maximum slewing torque.</p>
+            <p><strong>Objective:</strong> This tool sizes a single motor to cover all PM010 crane variants (PF120, PF160, PF200) and the PM401 crane type. PM010 is the SAP designation for the PF-Redesign product line.</p>
+
+            <p><strong>Strategy:</strong> Following proven PF200 design philosophy, the motor is sized to carry a minimum 30% share of the worst-case structural peak torque — not the full peak. This fractional approach ensures cost-effective motor selection while maintaining robust performance across all variants. The gearbox is nevertheless sized to withstand the full structural peak torque for overload protection.</p>
+
+            <p><strong>Dimensioning Basis:</strong> Two operating scenarios are evaluated: Transport Position operation (PM010 maximum 43 kNm) and Substation operation (PM401 maximum 62 kNm). The Substation scenario (PM401) was selected as the worst-case basis due to its higher structural torque, making it the governing requirement across all variants.</p>
+
+            <p><strong>Result:</strong> A motor delivering minimum {{ required_gearmotor_output_torque_nm|floatformat:1 }} Newton-metres at {{ gearmotor_output_speed_min_rpm|floatformat:0 }}–{{ gearmotor_output_speed_max_rpm|floatformat:0 }} revolutions per minute is required. This corresponds to {{ pf200_torque_share_percent|floatformat:1 }}% of the PF200 reference maximum slewing torque, confirming consistency with historical PF200 proven operation.</p>
         </div>
     </div>
 
